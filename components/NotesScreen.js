@@ -13,6 +13,7 @@ import { TouchableOpacity } from 'react-native';
 import { Icon } from 'react-native-elements';
 import {getDetailedDisplay} from './settings.js'
 import NoteCardSlim from './NoteCardSlim.js';
+import CurrentUser from '../services/CurrentUser.js';
 import * as SQLite from 'expo-sqlite';
 
 const db = SQLite.openDatabase('notes.db');
@@ -34,7 +35,9 @@ export default function NotesScreen({ navigation, route }){
                 route.params === undefined ?
                 tx.executeSql(
                 'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "false"', null,
+                'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "false" ' +
+                'AND N.UserEmail = ?', 
+                [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
                     , (t, error) => console.log('Error ', error))
@@ -43,8 +46,8 @@ export default function NotesScreen({ navigation, route }){
                 tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
                     'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "false" ' +
-                    'AND N.CategoryName = ?'
-                    , [route.params.category],
+                    'AND N.CategoryName = ? AND N.UserEmail = ?'
+                    , [route.params.category, CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => {
                         setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
                         , (t, error) => console.log('Error ', error));
@@ -55,7 +58,9 @@ export default function NotesScreen({ navigation, route }){
                 route.params === undefined ?
                 tx.executeSql(
                 'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "true"', null,
+                'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "true" ' +
+                'AND N.UserEmail = ?',
+                [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
                     , (t, error) => console.log('Error ', error))
@@ -64,8 +69,8 @@ export default function NotesScreen({ navigation, route }){
                 tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
                     'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "true" '  +
-                    'AND N.CategoryName = ?'
-                    , [route.params.category],
+                    'AND N.CategoryName = ? AND N.UserEmail = ?'
+                    , [route.params.category, CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => {
                         setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
                         , (t, error) => console.log('Error ', error));

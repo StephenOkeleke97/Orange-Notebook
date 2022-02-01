@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { TouchableOpacity } from 'react-native';
 import { Icon } from 'react-native-elements';
 import { HideKeyboard } from './HideKeyboard.js';
+import CurrentUser from '../services/CurrentUser.js';
 import * as SQLite from 'expo-sqlite';
 
 const getSectionHeight = (percent) => {
@@ -38,9 +39,9 @@ export default function CreateNotesScreen({ navigation, route}){
         } else {
             db.transaction((tx) => {
                 tx.executeSql(
-                'INSERT INTO Notes(Title, CategoryName, Label, Content, DateAdded, Deleted, Pinned, Synced) VALUES (' +
-                    '?, ?, ?, ?, ?, "false", "false", "false")' 
-                , [titleText, route.params.category, labelText, contentText, date],
+                'INSERT INTO Notes(Title, UserEmail, CategoryName, Label, Content, DateAdded, Deleted, Pinned, Synced) VALUES (' +
+                    '?, ?, ?, ?, ?, ?, "false", "false", "false")' 
+                , [titleText, CurrentUser.prototype.getUser(), route.params.category, labelText, contentText, date],
                 null, (t, error) => console.log('Error ', error));
             });
         }     

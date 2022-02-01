@@ -11,11 +11,19 @@ import {  DefaultTheme } from '@react-navigation/native';
 import { useEffect } from 'react';
 import * as SQLite from 'expo-sqlite';
 import NotesScreen from './components/NotesScreen';
+import * as FileSystem from 'expo-file-system';
 
 const db = SQLite.openDatabase('notes.db');
 
 db.exec([{ sql: 'PRAGMA foreign_keys = ON;', args: [] }], false, () =>
 console.log('Foreign keys turned on'));
+
+const fileSystem = async () => {
+  let a = await FileSystem.getInfoAsync(FileSystem.documentDirectory + 'SQLite/notes.db');
+  console.log(a);
+  return a;
+}
+fileSystem();
 
 const Stack = createNativeStackNavigator();
 
@@ -33,12 +41,20 @@ export default function App() {
       // tx.executeSql('DROP TABLE IF EXISTS Category' );
 
       // tx.executeSql( 'DROP TABLE IF EXISTS Notes');
+      
+      // tx.executeSql( 'DROP TABLE IF EXISTS UserSettings');
 
-      // tx.executeSql( 'DROP TABLE IF EXISTS Settings');
+      // tx.executeSql( 'DROP TABLE IF EXISTS Users');
 
 
-      tx.executeSql( 'CREATE TABLE IF NOT EXISTS Settings(SettingName TEXT UNIQUE, SettingEnabled TEXT, ' + 
-      'PRIMARY KEY(SettingName))', [], null, (t, error) => console.log(error));
+      tx.executeSql('CREATE TABLE IF NOT EXISTS Users(UserID INTEGER UNIQUE NOT NULL, UserEmail TEXT UNIQUE NOT NULL,' +
+        'PRIMARY KEY(UserID))',
+      [], null, (t, error) => console.log(error));
+
+      tx.executeSql( 'CREATE TABLE IF NOT EXISTS UserSettings(UserEmail TEXT NOT NULL, SettingName ' +
+      'TEXT NOT NULL, SettingEnabled TEXT NOT NULL, PRIMARY KEY(UserEmail, SettingName), ' +
+      'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)', 
+      [], null, (t, error) => console.log(error));
 
       tx.executeSql(
         'CREATE TABLE IF NOT EXISTS Category(CategoryName TEXT UNIQUE ' +
@@ -47,18 +63,13 @@ export default function App() {
 
       
 
-      tx.executeSql('CREATE TABLE IF NOT EXISTS Notes(NotesID INTEGER UNIQUE NOT NULL,' +  
+      tx.executeSql('CREATE TABLE IF NOT EXISTS Notes(NotesID INTEGER UNIQUE NOT NULL, UserEmail TEXT, ' +  
           'Title TEXT, CategoryName TEXT, Label TEXT, Content TEXT, DateAdded DATE, Deleted TEXT, Pinned TEXT, Synced TEXT,' +
-           'PRIMARY KEY (NotesID) FOREIGN KEY (CategoryName) REFERENCES Category ON DELETE SET NULL ON UPDATE CASCADE)'
+           'PRIMARY KEY (NotesID) FOREIGN KEY (CategoryName) REFERENCES Category ON DELETE SET NULL ON UPDATE CASCADE ' + 
+           'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)'
            , [], null, (t,error) => console.log(error));
 
       tx.executeSql('INSERT OR IGNORE INTO Category VALUES ("None", 209, 211, 212)'
-      , [], null, (t,error) => console.log(error));
-
-      tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("DetailedView", "1.0")'
-      , [], null, (t,error) => console.log(error));
-
-      tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("BackupEnabled", "1.0")'
       , [], null, (t,error) => console.log(error));
       
     });

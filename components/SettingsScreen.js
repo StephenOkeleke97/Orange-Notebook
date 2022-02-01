@@ -1,3 +1,4 @@
+import React from 'react';
 import { View,
     FlatList,
     Text,
@@ -13,7 +14,8 @@ import NoteCardSlim from './NoteCardSlim.js';
 import {getDetailedDisplay, toggleDetailedDisplay,
      getBackUpEnabled, toggleBackUpEnabled } from './settings.js'
 import { useFocusEffect } from '@react-navigation/native';
-import React from 'react';
+import { globalStyles } from '../styles/global.js';
+import UserService from '../services/UserService.js';
 import * as SQLite from 'expo-sqlite';
 
 const db = SQLite.openDatabase('notes.db');
@@ -30,6 +32,16 @@ export default function SettingsScreen() {
         setIsBackUpEnabled(bool);
     }
 
+    useEffect(() => {
+        let intervalId = 0;
+        if (isBackUpEnabled) {
+            intervalId = setInterval(() => {
+                console.log("hello");
+            }, 5000);
+        } 
+        return () => {clearInterval(intervalId)};
+    }, [isBackUpEnabled]);
+
     useFocusEffect(
     React.useCallback(() => {
         getDetailedDisplay(setDetailEnabledCallBack);
@@ -43,6 +55,10 @@ export default function SettingsScreen() {
 
     const toggleEnableBackUp = () => {
         toggleBackUpEnabled(setBackUpEnabledCallBack);
+    }
+
+    const handleBackupToServer = () => {
+        UserService.backUp();
     }
 
     return(
@@ -70,6 +86,9 @@ export default function SettingsScreen() {
                          />
 
             </TouchableOpacity>  
+            <TouchableOpacity style={globalStyles.yellowButton} onPress={() => handleBackupToServer()}>
+                        <Text>Back Up</Text>
+            </TouchableOpacity>
             <TouchableOpacity style={styles.settingsComponent}
             activeOpacity={0.8}>
                         <Text style={styles.settingsText}>Enable Backup</Text>

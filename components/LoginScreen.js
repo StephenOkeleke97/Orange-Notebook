@@ -12,6 +12,8 @@ import { useFonts } from 'expo-font';
 import { globalStyles } from '../styles/global.js';
 import { HideKeyboard } from './HideKeyboard.js';
 import UserService from '../services/UserService.js';
+import CurrentUser from '../services/CurrentUser.js';
+import { initializeSettings } from './settings.js';
 
 export default function LoginScreen({navigation}) {
     const [email, setEmail] =  useState("");
@@ -38,11 +40,13 @@ export default function LoginScreen({navigation}) {
           }
         },
         badResponse: () => {
-          alert("Something went wrong. Try again later.")
+          alert("Something went wrong. Try again later.");
         }
       }
 
       const onSubmit = () => {
+        CurrentUser.prototype.setUser(email);
+        initializeSettings();
         navigation.navigate("HomeLoggedIn");
       
         // if (email === "" || password === ""){
