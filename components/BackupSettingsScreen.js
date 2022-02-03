@@ -11,7 +11,7 @@ import {getBackUpEnabled, toggleBackUpEnabled } from './settings.js';
 import UserService from '../services/UserService.js';
 
 const BackupSettingsScreen = ( {navigation} ) => {
-    const backupFrequency = {"Daily": 180000,
+    const backupFrequency = {"Daily": 86400000,
     "Weekly": 604800000,
     "Monthly": 2419200000};
     const [rotateAnimation, setRotateAnimation] = useState(new Animated.Value(0));
@@ -43,7 +43,7 @@ const BackupSettingsScreen = ( {navigation} ) => {
     useEffect(() => {
         if (backupInProgress) startImageRotateFunction();
         else rotateAnimation.stopAnimation();
-    })
+    }, [backupInProgress])
 
     useEffect(() => {
         let id = 0;
@@ -51,19 +51,20 @@ const BackupSettingsScreen = ( {navigation} ) => {
         let intervalId = 0;
         if (isBackUpEnabled) {
             id = setTimeout(function run() {
-                // console.log("new interval");
+                console.log("new interval");
                 if (!backUpSuccessful) {
                     intervalId = setInterval(() => {
-                        // console.log("repeat process");
-                        UserService.backUp(setProgressActiveCallBack, setProgressCallBack,
-                        true, (boolean) => {setBackUpSuccessful(boolean)})
+                        console.log("repeat process");
+                        // UserService.backUp(setProgressActiveCallBack, setProgressCallBack,
+                        // true, (boolean) => {setBackUpSuccessful(boolean)});
                     }, 3000);
                 } else {
-                    clearInterval(intervalId);
+                    console.log("backup successful");
                     setBackUpSuccessful(false);
-                    id2 = setTimeout(run, 6000);
+                    clearInterval(intervalId);
+                    id2 = setTimeout(run, backUpSuccessful ? 0 : 5000);
                 }
-            }, 6000);
+            }, backUpSuccessful ? 0 : 5000);
         }
 
         // let intervalId = 0;
@@ -86,7 +87,7 @@ const BackupSettingsScreen = ( {navigation} ) => {
         // } 
         // return () => {clearInterval(intervalId)};
         return () => {clearTimeout(id); clearTimeout(id2); clearInterval(intervalId)};
-    }, [isBackUpEnabled, backUpSuccessful]);
+    }, [isBackUpEnabled, backUpSuccessful, backupFrequencyLabel]);
 
     const setProgressActiveCallBack = (boolean) => {
         setBackupInProgress(boolean);
@@ -292,7 +293,7 @@ const BackupSettingsScreen = ( {navigation} ) => {
             </View>
 
             <TouchableOpacity style={globalStyles.yellowButton}
-            onPress={() => setBackUpSuccessful(!backUpSuccessful)}>
+            onPress={() => setBackupInProgress(!backupInProgress)}>
                 <Text>{backUpSuccessful ? "true" : "false"}</Text>
             </TouchableOpacity>
         </View>

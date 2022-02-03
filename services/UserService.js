@@ -26,8 +26,8 @@ const db = SQLite.openDatabase('notes.db');
 
 class UserService {
     timeout = 10000;
-    initialWait = 1000;
-    successWait = 1000;
+    initialWait = 5000;
+    successWait = 2000;
     
      async backUp(setProgressActiveCallBack, setProgressCallBack, 
         isAutomatic, isSuccesful) {
@@ -69,13 +69,13 @@ class UserService {
                 } else {
                     this._errorAlert("Back Up", isAutomatic);
                     setProgressActiveCallBack(false);
-                    if (isAutomatic) isSuccesful(false);
+                    // if (isAutomatic) isSuccesful(false);
                 }
             }).catch(error => {
                 console.log(error);
                 this._errorAlert("Back Up", isAutomatic);
                 setProgressActiveCallBack(false);
-                if (isAutomatic) isSuccesful(false);
+                // if (isAutomatic) isSuccesful(false);
             });
          }, this.initialWait)
     }
