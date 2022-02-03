@@ -5,6 +5,9 @@ import LoginScreen from './components/LoginScreen';
 import VerifyEmailScreen from './components/VerifyEmailScreen';
 import HomeLoggedInScreen from './components/HomeLoggedInScreen';
 import AddNoteToCategoryScreen from './components/AddNoteToCategoryScreen';
+import BackupSettingsScreen from './components/BackupSettingsScreen';
+import BackupSettingsFrequency from './components/BackupSettingsFrequency';
+import SettingsScreen from './components/SettingsScreen';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import {  DefaultTheme } from '@react-navigation/native';
@@ -44,16 +47,27 @@ export default function App() {
       
       // tx.executeSql( 'DROP TABLE IF EXISTS UserSettings');
 
+      // tx.executeSql( 'DROP TABLE IF EXISTS Settings');
+
       // tx.executeSql( 'DROP TABLE IF EXISTS Users');
 
+      // tx.executeSql( 'DROP TABLE IF EXISTS BackupFrequency');
+
+      tx.executeSql('CREATE TABLE IF NOT EXISTS BackupFrequency(Frequency [Daily, Weekly, Monthly] UNIQUE NOT NULL,' +
+        'PRIMARY KEY(Frequency))',
+      [], null, (t, error) => console.log(error));
 
       tx.executeSql('CREATE TABLE IF NOT EXISTS Users(UserID INTEGER UNIQUE NOT NULL, UserEmail TEXT UNIQUE NOT NULL,' +
-        'PRIMARY KEY(UserID))',
+        'BackupFrequency TEXT, BackupSize INTEGER, BackupDate DATE, PRIMARY KEY(UserID), FOREIGN KEY (BackupFrequency) REFERENCES BackupFrequency(Frequency))',
+      [], null, (t, error) => console.log(error));
+
+      tx.executeSql('CREATE TABLE IF NOT EXISTS Settings(SettingName TEXT UNIQUE NOT NULL,' +
+        'PRIMARY KEY(SettingName))',
       [], null, (t, error) => console.log(error));
 
       tx.executeSql( 'CREATE TABLE IF NOT EXISTS UserSettings(UserEmail TEXT NOT NULL, SettingName ' +
       'TEXT NOT NULL, SettingEnabled TEXT NOT NULL, PRIMARY KEY(UserEmail, SettingName), ' +
-      'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)', 
+      'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE FOREIGN KEY(SettingName) REFERENCES Settings(SettingName) ON DELETE RESTRICT)', 
       [], null, (t, error) => console.log(error));
 
       tx.executeSql(
@@ -71,6 +85,19 @@ export default function App() {
 
       tx.executeSql('INSERT OR IGNORE INTO Category VALUES ("None", 209, 211, 212)'
       , [], null, (t,error) => console.log(error));
+
+      tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("DetailedView")'
+      , [], null, (t,error) => console.log(error));
+      tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("BackupEnabled")'
+      , [], null, (t,error) => console.log(error));
+      tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Daily")'
+      , [], null, (t,error) => console.log(error));
+
+      tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Weekly")'
+      , [], null, (t,error) => console.log(error));
+
+      tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Monthly")'
+      , [], null, (t,error) => console.log(error));
       
     });
   }, []);
@@ -87,6 +114,9 @@ export default function App() {
         <Stack.Screen name='CreateNote' component={CreateNotesScreen}/>
         <Stack.Screen name='AddToCategory' component={AddNoteToCategoryScreen} options={{gestureEnabled:false }}/>
         <Stack.Screen name='NotesScreen' component={NotesScreen}/>
+        <Stack.Screen name='Backup' component={BackupSettingsScreen}/>
+        <Stack.Screen name='Settings' component={SettingsScreen}/>
+        <Stack.Screen name='BackupFrequency' component={BackupSettingsFrequency}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

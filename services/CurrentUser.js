@@ -10,7 +10,7 @@ export default class CurrentUser {
         this.currentUser = email;
     
         db.transaction((tx) => {
-            tx.executeSql('INSERT OR IGNORE INTO Users(UserEmail) VALUES (?)', [email], 
+            tx.executeSql('INSERT OR IGNORE INTO Users(UserEmail, BackupFrequency) VALUES (?, "Daily")', [email], 
             null,
             (t, error) => {console.log(error)});
         })

@@ -3,11 +3,10 @@ import { View,
     FlatList,
     Text,
     Image,
-    StyleSheet,
-    TextInput  } from 'react-native';
+    StyleSheet, Switch,
+    TextInput, TouchableOpacity  } from 'react-native';
 import { deleted, Notes } from '../Notes.js';
 import { useEffect, useState } from 'react';
-import { TouchableOpacity, Switch } from 'react-native';
 import { Icon } from 'react-native-elements';
 import Category from './Category.js';
 import NoteCardSlim from './NoteCardSlim.js';
@@ -20,9 +19,26 @@ import * as SQLite from 'expo-sqlite';
 
 const db = SQLite.openDatabase('notes.db');
 
-export default function SettingsScreen() {
+export default function SettingsScreen( {navigation} ) {
     const [isDetailedEnabled, setIsDetailedEnabled] = useState(false);
     const [isBackUpEnabled, setIsBackUpEnabled] = useState(false);
+
+    // useEffect(() => {
+    //     let intervalId = 0;
+    //     if (isBackUpEnabled) {
+    //         intervalId = setInterval(() => {
+    //             console.log("hello");
+    //         }, 5000);
+    //     } 
+    //     return () => {clearInterval(intervalId)};
+    // }, [isBackUpEnabled]);
+
+    useFocusEffect(
+    React.useCallback(() => {
+        getDetailedDisplay(setDetailEnabledCallBack);
+        getBackUpEnabled(setBackUpEnabledCallBack);
+    })
+    );
 
     const setDetailEnabledCallBack = (bool) => {
         setIsDetailedEnabled(bool);
@@ -32,22 +48,9 @@ export default function SettingsScreen() {
         setIsBackUpEnabled(bool);
     }
 
-    useEffect(() => {
-        let intervalId = 0;
-        if (isBackUpEnabled) {
-            intervalId = setInterval(() => {
-                console.log("hello");
-            }, 5000);
-        } 
-        return () => {clearInterval(intervalId)};
-    }, [isBackUpEnabled]);
-
-    useFocusEffect(
-    React.useCallback(() => {
-        getDetailedDisplay(setDetailEnabledCallBack);
-        getBackUpEnabled(setBackUpEnabledCallBack);
-    })
-    );
+    const handleNavigateToBackupSettings = () => {
+        navigation.navigate('Backup');
+    }
 
     const toggleDetailedEnabled = () => {
         toggleDetailedDisplay(setDetailEnabledCallBack);
@@ -86,19 +89,23 @@ export default function SettingsScreen() {
                          />
 
             </TouchableOpacity>  
-            <TouchableOpacity style={globalStyles.yellowButton} onPress={() => handleBackupToServer()}>
+            {/* <TouchableOpacity style={globalStyles.yellowButton} onPress={() => handleBackupToServer()}>
                         <Text>Back Up</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             <TouchableOpacity style={styles.settingsComponent}
-            activeOpacity={0.8}>
-                        <Text style={styles.settingsText}>Enable Backup</Text>
-                        <Switch
+            activeOpacity={0.5} onPress={() => handleNavigateToBackupSettings()}>
+                        <Text style={styles.settingsText}>Backup</Text>
+                        {/* <Switch
                          trackColor={{false: "#F1F2F2", true: "#00DC7D" }}
                          thumbColor={"#fff"}
                          ios_backgroundColor="#3e3e3e"
                          onValueChange={toggleEnableBackUp}
                          value={isBackUpEnabled}
-                         />
+                         /> */}
+                          <Icon
+                        name='chevron-right'
+                        type='material-community'
+                        color='#000'/>
                             
             </TouchableOpacity>  
             </View>  
@@ -166,11 +173,6 @@ const styles = StyleSheet.create({
     },
 
     settingsComponent: {
-        // borderTopWidth: 1,
-        // borderTopColor: '#6D6E71',
-        // borderBottomWidth: 1,
-        // borderBottomColor: '#6D6E71',
-        // borderRadius: 10,
         height: 50,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -179,7 +181,6 @@ const styles = StyleSheet.create({
         paddingLeft: 10,
         borderBottomColor: '#D1D3D4',
         borderBottomWidth: 0.4,
-        // marginBottom: 5,
     },
 
     settingsText: {

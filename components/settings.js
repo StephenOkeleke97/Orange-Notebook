@@ -92,4 +92,49 @@ export function initializeSettings() {
     });
 }
 
+export function setBackupFrequency(frequency, callback) {
+    db.transaction((tx) => {
+        tx.executeSql('UPDATE Users SET BackupFrequency = ? WHERE UserEmail = ?', 
+        [frequency, CurrentUser.prototype.getUser()], () => callback(), (t, error) => console.log(error))
+    });
+}
+
+export function getBackupFrequency(callback) {
+    db.transaction((tx) => {
+        tx.executeSql('SELECT BackupFrequency FROM Users WHERE UserEmail = ?', 
+        [CurrentUser.prototype.getUser()], (t, {rows: {_array}}) => callback(_array[0].BackupFrequency), (t, error) => console.log(error))
+    });
+}
+
+export function setLastBackupDate(date) {
+    db.transaction((tx) => {
+        tx.executeSql('UPDATE Users SET BackupDate = ? WHERE UserEmail = ?',
+        [date, CurrentUser.prototype.getUser()], null, error => console.log(error))
+    })
+}
+
+export function getLastBackUpDate(callback) {
+    db.transaction((tx) => [
+        tx.executeSql('SELECT BackupDate FROM Users WHERE UserEmail = ?',
+        [CurrentUser.prototype.getUser()], (t, {rows: {_array}}) => {
+            callback(_array[0].BackupDate);
+        })
+    ])
+}
+
+export function setLastBackupSize(size) {
+    db.transaction((tx) => {
+        tx.executeSql('UPDATE Users SET BackupSize = ? WHERE UserEmail = ?',
+        [size, CurrentUser.prototype.getUser()], null, error => console.log(error))
+    })
+}
+
+export function getLastBackUpSize(callback) {
+    db.transaction((tx) => [
+        tx.executeSql('SELECT BackupSize FROM Users WHERE UserEmail = ?',
+        [CurrentUser.prototype.getUser()], (t, {rows: {_array}}) => {
+            callback(_array[0].BackupSize);
+        })
+    ])
+}
 
