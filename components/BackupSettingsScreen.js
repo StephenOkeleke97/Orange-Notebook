@@ -3,23 +3,25 @@ import {Text, View, TouchableOpacity ,
         StyleSheet, Animated, Easing, Switch, Alert} from 'react-native';
 import { useEffect, useState } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
-import { getBackupFrequency, getLastBackUpDate, getLastBackUpSize } from './settings.js';
+import { getBackupFrequency, getLastBackUpDate, getLastBackUpSize,
+setLastBackupDate, setLastBackupSize } from './settings.js';
 import { Icon } from 'react-native-elements';
 import { globalStyles } from '../styles/global';
 import {getBackUpEnabled, toggleBackUpEnabled } from './settings.js';
 import UserService from '../services/UserService.js';
 
 const BackupSettingsScreen = ( {navigation} ) => {
-    const backupFrequency = {"Daily": 86400000,
+    const backupFrequency = {"Daily": 180000,
     "Weekly": 604800000,
     "Monthly": 2419200000};
     const [rotateAnimation, setRotateAnimation] = useState(new Animated.Value(0));
     const [backupInProgress, setBackupInProgress] = useState(false);
     const [isBackUpEnabled, setIsBackUpEnabled] = useState(false);
     const [backupFrequencyLabel, setBackupFrequencyLabel] = useState("Daily");
-    const [lastBackUpDate, setLastBackupDate] = useState("");
-    const [lastBackUpSize, setLastBackupSize] = useState(0);
-    const [progressPercent, setProgressPercent] = useState(0);
+    const [lastDate, setLastDate] = useState("");
+    const [lastSize, setLastSize] = useState(0);
+    const [backUpSuccessful, setBackUpSuccessful] = useState(false);
+    const [progressPercent, setProgressPercent] = useState(0 + ' %');
 
     const backupFrequencyActiveOpacity = isBackUpEnabled ? 0.3 : 1;
 
@@ -28,11 +30,12 @@ const BackupSettingsScreen = ( {navigation} ) => {
             getBackUpEnabled(setBackUpEnabledCallBack);
             getBackupFrequency((frequency) => setBackupFrequencyLabel(frequency));
             getLastBackUpDate((date) => {
-                if (date === null) setLastBackupDate("None");
-                else setLastBackupDate(date);
+                if (date === null) setLastDate("None");
+                else setLastDate(date);
             });
             getLastBackUpSize((size) => {
-                if (size !== null) setLastBackupSize(size);
+                if (size === null) setLastSize(0);
+                else setLastSize(size);
             })
         })
     );
@@ -40,7 +43,50 @@ const BackupSettingsScreen = ( {navigation} ) => {
     useEffect(() => {
         if (backupInProgress) startImageRotateFunction();
         else rotateAnimation.stopAnimation();
-    });
+    })
+
+    useEffect(() => {
+        let id = 0;
+        let id2 = 0;
+        let intervalId = 0;
+        if (isBackUpEnabled) {
+            id = setTimeout(function run() {
+                // console.log("new interval");
+                if (!backUpSuccessful) {
+                    intervalId = setInterval(() => {
+                        // console.log("repeat process");
+                        UserService.backUp(setProgressActiveCallBack, setProgressCallBack,
+                        true, (boolean) => {setBackUpSuccessful(boolean)})
+                    }, 3000);
+                } else {
+                    clearInterval(intervalId);
+                    setBackUpSuccessful(false);
+                    id2 = setTimeout(run, 6000);
+                }
+            }, 6000);
+        }
+
+        // let intervalId = 0;
+        // if (isBackUpEnabled) {
+        //     intervalId = setInterval(() => {
+        //         console.log("a");
+        //         while (!backUpSuccessful) {
+        //             setTimeout(() => {
+        //                 UserService.backUp(setProgressActiveCallBack, setProgressCallBack,
+        //                     true, (boolean) => {setBackUpSuccessful(boolean)})
+        //             }, 1000);
+        //         }
+        //         setBackUpSuccessful(false);
+        //     }, 3000);
+        // } 
+        // if (isBackUpEnabled) {
+        //     intervalId = setInterval(() => {
+        //         console.log("Hello");
+        //     }, 3000);
+        // } 
+        // return () => {clearInterval(intervalId)};
+        return () => {clearTimeout(id); clearTimeout(id2); clearInterval(intervalId)};
+    }, [isBackUpEnabled, backUpSuccessful]);
 
     const setProgressActiveCallBack = (boolean) => {
         setBackupInProgress(boolean);
@@ -66,7 +112,13 @@ const BackupSettingsScreen = ( {navigation} ) => {
         ]);  
     }
 
+    const updateLastDateAndSize = (date, size) => {
+        setLastBackupDate(date);
+        setLastBackupSize(size);
+    }
+
     const handleRestoreFromServer = () => {
+
         Alert.alert('Restore Backup',
         'Are you sure you want to restore backup? Completing this ' +
         'action will overwrite all notes on this device.',
@@ -77,7 +129,8 @@ const BackupSettingsScreen = ( {navigation} ) => {
             }, 
             {
                 text: 'Restore',
-                onPress: () => {UserService.restoreBackup(setProgressActiveCallBack, setProgressCallBack)}
+                onPress: () => {UserService.restoreBackup(setProgressActiveCallBack, 
+                    setProgressCallBack, updateLastDateAndSize, lastDate, lastSize)}
             }
         ])
     }
@@ -93,7 +146,8 @@ const BackupSettingsScreen = ( {navigation} ) => {
             }, 
             {
                 text: 'Delete',
-                style: 'destructive'
+                style: 'destructive',
+                onPress: () => {UserService.deleteBackup(setProgressActiveCallBack, setProgressCallBack)}
             }
         ])
     }
@@ -184,9 +238,9 @@ const BackupSettingsScreen = ( {navigation} ) => {
                         </Animated.View>
                     </View>
                     <View style={styles.progressDescription}>
-                        <Text style={styles.progressDescriptionText}>Last Backup: {lastBackUpDate}</Text>
-                        <Text style={styles.progressDescriptionText}>Total Size: {lastBackUpSize} mb</Text>
-                        {backupInProgress && <Text style={styles.progressDescriptionText}>Progress: {progressPercent}%</Text>}
+                        <Text style={styles.progressDescriptionText}>Last Backup: {lastDate}</Text>
+                        <Text style={styles.progressDescriptionText}>Total Size: {lastSize} mb</Text>
+                        {backupInProgress && <Text style={styles.progressDescriptionText}>Progress: {progressPercent}</Text>}
                     </View>
                 </View>
                 <View>
@@ -236,6 +290,11 @@ const BackupSettingsScreen = ( {navigation} ) => {
 
                 </TouchableOpacity>   
             </View>
+
+            <TouchableOpacity style={globalStyles.yellowButton}
+            onPress={() => setBackUpSuccessful(!backUpSuccessful)}>
+                <Text>{backUpSuccessful ? "true" : "false"}</Text>
+            </TouchableOpacity>
         </View>
     </View>
 }

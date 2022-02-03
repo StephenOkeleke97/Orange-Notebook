@@ -4,7 +4,7 @@ import { FileSystemSessionType, FileSystemUploadType } from "expo-file-system";
 import CurrentUser from "./CurrentUser";
 import * as SQLite from 'expo-sqlite';
 import { Alert } from "react-native";
-import { setLastBackupDate, setLastBackupSize } from "../components/settings";
+import { getLastBackUpDate, getLastBackUpSize, setLastBackupDate, setLastBackupSize } from "../components/settings";
 
 const auth = {username: "user", password: "password"};
 const getUsersAPI = 'http://10.0.0.47:8080/api/getUsers';
@@ -16,12 +16,21 @@ const addNoteAPI = 'http://10.0.0.47:8080/api/addNote';
 const loginAPI = 'http://10.0.0.47:8080/api/login';
 const backUpAPI = 'http://10.0.0.91:8080/api/backup';
 const restoreBackupAPI = 'http://10.0.0.91:8080/api/files/';
+const deleteBackupAPI = 'http://10.0.0.91:8080/api/deleteBackup/';
 
 const db = SQLite.openDatabase('notes.db');
 
-class UserService {
+// axios.get('http://10.0.0.91:8080/api/files', {
+//     auth: auth
+// }).then(response => console.log(response.data))
 
-     async backUp(setProgressActiveCallBack, setProgressCallBack) {
+class UserService {
+    timeout = 10000;
+    initialWait = 1000;
+    successWait = 1000;
+    
+     async backUp(setProgressActiveCallBack, setProgressCallBack, 
+        isAutomatic, isSuccesful) {
          let size = 0;
          setProgressActiveCallBack(true);
          setTimeout(() => {
@@ -32,19 +41,21 @@ class UserService {
                 type: 'db',
                 name: `${CurrentUser.prototype.getUser()}backup`
             });
+
             axios.post(backUpAPI, data, {
                 headers: {
                     'Content-Type': 'multipart/form-data'
                 },
                 auth: auth,
-                timeout: 10000,
+                timeout: this.timeout,
                 onUploadProgress: (progress) => {
                     size = progress.total;
                     let percentCompleted = Math.floor(progress.loaded / progress.total * 100);
-                    setProgressCallBack(percentCompleted);
+                    setProgressCallBack(percentCompleted + '%');
                 }
             }).then(response => {
                 if (response.status === 200) {
+                    console.log(response.status);
                     const d = new Date();
                     const date = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
                     setLastBackupDate(date);
@@ -52,128 +63,91 @@ class UserService {
                     setTimeout(() => {
                         setProgressActiveCallBack(false);
                         setProgressCallBack(0);
-                        this._successAlert("Back Up");
-                    }, 2000);
+                        if (isAutomatic) isSuccesful(true);
+                        this._successAlert("Back Up", isAutomatic);
+                    }, this.successWait);
                 } else {
-                    this._errorAlert("Back Up");
+                    this._errorAlert("Back Up", isAutomatic);
                     setProgressActiveCallBack(false);
+                    if (isAutomatic) isSuccesful(false);
                 }
             }).catch(error => {
                 console.log(error);
-                this._errorAlert("Back Up");
+                this._errorAlert("Back Up", isAutomatic);
                 setProgressActiveCallBack(false);
+                if (isAutomatic) isSuccesful(false);
             });
-         }, 3000)
-         //MAKE BACKUP
-        // const data = new FormData();
-        // const path = FileSystem.documentDirectory + 'SQLite/notes.db';
-        // data.append('file', {
-        //     uri: path,
-        //     type: 'db',
-        //     name: `${CurrentUser.prototype.getUser()}backup`
-        // });
-        // axios.post(backUpAPI, data, {
-        //     headers: {
-        //         'Content-Type': 'multipart/form-data'
-        //       },
-        //       auth: auth,
-        //       timeout: 10000,
-        //       onUploadProgress: (progress) => {
-        //           let percentCompleted = Math.floor(progress.loaded / progress.total * 100);
-        //           console.log(percentCompleted);
-        //       }
-        // }).then(response => console.log(response.status)).catch(error => {
-        //     console.log(error);
-        //     Alert.alert("Network Error", "Please connect to the internet and try again")
-        // });
-        
-        //DELETE BACKUP
-        // axios.delete('http://10.0.0.91:8080/api/deleteBackup/' + `${CurrentUser.prototype.getUser()}backup`, {
-        //     auth: auth,
-        // }).then(response => console.log(response.data)).catch(error => console.log(error));
-
-        // axios.get('http://10.0.0.91:8080/api/files', {
-        //     auth: auth,
-        // }).then(response => console.log(response.data)).catch(error => console.log(error));
-
-        //GET BACKUP
-        // axios.get('http://10.0.0.109:8080/api/files/' + `${CurrentUser.prototype.getUser()}backup`,
-        //  {
-        //     auth: auth,
-        // }).then(response => {
-        //     console.log(response);
-        //     FileSystem.downloadAsync('http://10.0.0.109:8080/api/files/' + `${CurrentUser.prototype.getUser()}backup`,
-        //     FileSystem.documentDirectory + 'SQLite/notes.db', {sessionType: FileSystemSessionType.BACKGROUND}).then((response) => {
-        //     db._db.close();
-        //     // console.log(response);
-        // });
-        // }).catch(error => {
-        //     if (error.response === undefined) Alert.alert("Backup failed","Something went wrong. Try again later");
-        //     else Alert.alert("No backup available", "There is no backup associated with this account");
-        //     // console.log(error.response);
-        // });
-
-        // let a = await FileSystem.downloadAsync('http://10.0.0.91:8080/api/files/' + `${CurrentUser.prototype.getUser()}backup`
-        // , FileSystem.documentDirectory + 'SQLite/notes.db', {sessionType: FileSystemSessionType.BACKGROUND}).then((response) => {
-        //     db._db.close();
-        //     console.log(response);
-        // });
-
-        // //GET BACKUP
-        // axios.get('http://10.0.0.109:8080/api/files/' + `${CurrentUser.prototype.getUser()}backup`,
-        //  {
-        //     auth: auth,
-        // }).then(response => {
-        //     console.log(response);
-        //     FileSystem.createDownloadResumable('http://10.0.0.109:8080/api/files/' + `${CurrentUser.prototype.getUser()}backup`,
-        //     FileSystem.documentDirectory + 'SQLite/notes.db', {
-        //         sessionType: FileSystemSessionType.BACKGROUND
-        //     }, (progress) => {
-        //         console.log(progress);
-        //     }, null).downloadAsync().then((response) => {
-        //     db._db.close();
-        //     // console.log(response);
-        // });
-        // }).catch(error => {
-        //     if (error.response === undefined) Alert.alert("Backup failed","Something went wrong. Try again later");
-        //     else Alert.alert("No backup available", "There is no backup associated with this account");
-        //     // console.log(error.response);
-        // });
+         }, this.initialWait)
     }
 
-    restoreBackup(setProgressActiveCallBack, setProgressCallBack) {
+    restoreBackup(setProgressActiveCallBack, setProgressCallBack, 
+        updateLastDateAndSize, lastDate, lastSize) {
         setProgressActiveCallBack(true);
         setTimeout(() => {
             axios.get(restoreBackupAPI + `${CurrentUser.prototype.getUser()}backup`,
                 {
                    auth: auth,
+                   timeout: this.timeout
                }).then(response => {
                    FileSystem.createDownloadResumable(restoreBackupAPI + `${CurrentUser.prototype.getUser()}backup`,
                    FileSystem.documentDirectory + 'SQLite/notes.db', {
                        sessionType: FileSystemSessionType.BACKGROUND
                    }, (progress) => {
                        let percentCompleted = Math.floor(progress.totalBytesExpectedToWrite / progress.totalBytesWritten * 100);
-                       setProgressCallBack(percentCompleted);
+                       setProgressCallBack(percentCompleted + '%');
                    }, null).downloadAsync().then((response) => {
                        if (response.status === 200) {
+                           db._db.close();
+                           updateLastDateAndSize(lastDate, lastSize);
                             setTimeout(() => {
                                 setProgressActiveCallBack(false);
                                 setProgressCallBack(0);
                                 this._successAlert("Restore");
-                            }, 2000);
+                            }, this.successWait);
                        } else {
                            this._errorAlert("Restore");
                            setProgressActiveCallBack(false);
                        }
-                       db._db.close();
                });
                }).catch(error => {
                    console.log(error.response);
-                   if (error.response.status === 404) Alert.alert("No Backup Available", "There is no backup associated with this account");
+                   if (error.response === undefined) this._errorAlert("Restore");
+                   else if (error.response.status === 404) this._noBackupAlert();
                    else this._errorAlert("Restore");
                    setProgressActiveCallBack(false);
                });
-        }, 3000) 
+        }, this.initialWait) 
+    }
+
+    deleteBackup(setProgressActiveCallBack, setProgressCallBack) {
+        setProgressActiveCallBack(true);
+        setProgressCallBack('deleting...');
+        setTimeout(() => {
+            axios.delete(deleteBackupAPI + `${CurrentUser.prototype.getUser()}backup`, {
+                auth: auth,
+                timeout: this.timeout
+            }).then(response => {
+                if (response.status === 200) {
+                    setTimeout(() => {
+                        setLastBackupDate(null);
+                        setLastBackupSize(null);
+                        setProgressActiveCallBack(false);
+                        setProgressCallBack(0)
+                        this._successAlert("Delete");
+                    }, this.successWait)
+                } else {
+                    this._errorAlert("Delete");
+                    setProgressActiveCallBack(false);
+                    setProgressCallBack(0)
+                }
+            }).catch(error => {
+                if (error.response === undefined) this._errorAlert("Delete");
+                else if (error.response.status === 404) this._noBackupAlert();
+                else this._errorAlert("Delete");
+                setProgressActiveCallBack(false);
+                setProgressCallBack(0)
+            });
+        }, this.initialWait);
     }
 
     addUser(email, password, verify) {
@@ -233,12 +207,16 @@ class UserService {
 
      //Private functions 
 
-     _errorAlert(action) {
-         Alert.alert(`${action} failed`, "Something went wrong. Please try again later");
+     _errorAlert(action, isAutomatic) {
+         if (!isAutomatic) Alert.alert(`${action} Failed`, "Something went wrong. Please try again later");
      }
 
-     _successAlert(action) {
-         Alert.alert("", `${action} Succesful`);
+     _successAlert(action, isAutomatic) {
+         if (!isAutomatic) Alert.alert("", `${action} Succesful`);
+     }
+
+     _noBackupAlert() {
+        Alert.alert("No Backup", "There is no backup associated with this account");
      }
 }
 

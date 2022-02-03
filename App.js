@@ -26,7 +26,7 @@ const fileSystem = async () => {
   console.log(a);
   return a;
 }
-fileSystem();
+// fileSystem();
 
 const Stack = createNativeStackNavigator();
 
@@ -53,51 +53,51 @@ export default function App() {
 
       // tx.executeSql( 'DROP TABLE IF EXISTS BackupFrequency');
 
-      tx.executeSql('CREATE TABLE IF NOT EXISTS BackupFrequency(Frequency [Daily, Weekly, Monthly] UNIQUE NOT NULL,' +
-        'PRIMARY KEY(Frequency))',
-      [], null, (t, error) => console.log(error));
+      // tx.executeSql('CREATE TABLE IF NOT EXISTS BackupFrequency(Frequency [Daily, Weekly, Monthly] UNIQUE NOT NULL,' +
+      //   'PRIMARY KEY(Frequency))',
+      // [], null, (t, error) => console.log(error));
 
-      tx.executeSql('CREATE TABLE IF NOT EXISTS Users(UserID INTEGER UNIQUE NOT NULL, UserEmail TEXT UNIQUE NOT NULL,' +
-        'BackupFrequency TEXT, BackupSize INTEGER, BackupDate DATE, PRIMARY KEY(UserID), FOREIGN KEY (BackupFrequency) REFERENCES BackupFrequency(Frequency))',
-      [], null, (t, error) => console.log(error));
+      // tx.executeSql('CREATE TABLE IF NOT EXISTS Users(UserID INTEGER UNIQUE NOT NULL, UserEmail TEXT UNIQUE NOT NULL,' +
+      //   'BackupFrequency TEXT, BackupSize INTEGER, BackupDate DATE, PRIMARY KEY(UserID), FOREIGN KEY (BackupFrequency) REFERENCES BackupFrequency(Frequency))',
+      // [], null, (t, error) => console.log(error));
 
-      tx.executeSql('CREATE TABLE IF NOT EXISTS Settings(SettingName TEXT UNIQUE NOT NULL,' +
-        'PRIMARY KEY(SettingName))',
-      [], null, (t, error) => console.log(error));
+      // tx.executeSql('CREATE TABLE IF NOT EXISTS Settings(SettingName TEXT UNIQUE NOT NULL,' +
+      //   'PRIMARY KEY(SettingName))',
+      // [], null, (t, error) => console.log(error));
 
-      tx.executeSql( 'CREATE TABLE IF NOT EXISTS UserSettings(UserEmail TEXT NOT NULL, SettingName ' +
-      'TEXT NOT NULL, SettingEnabled TEXT NOT NULL, PRIMARY KEY(UserEmail, SettingName), ' +
-      'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE FOREIGN KEY(SettingName) REFERENCES Settings(SettingName) ON DELETE RESTRICT)', 
-      [], null, (t, error) => console.log(error));
+      // tx.executeSql( 'CREATE TABLE IF NOT EXISTS UserSettings(UserEmail TEXT NOT NULL, SettingName ' +
+      // 'TEXT NOT NULL, SettingEnabled TEXT NOT NULL, PRIMARY KEY(UserEmail, SettingName), ' +
+      // 'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE FOREIGN KEY(SettingName) REFERENCES Settings(SettingName) ON DELETE RESTRICT)', 
+      // [], null, (t, error) => console.log(error));
 
-      tx.executeSql(
-        'CREATE TABLE IF NOT EXISTS Category(CategoryName TEXT UNIQUE ' +
-           'NOT NULL, RedColor INT, GreenColor INT, BlueColor INT, PRIMARY KEY(CategoryName))'
-      , [], null, (t,error) => console.log(error));
+      // tx.executeSql(
+      //   'CREATE TABLE IF NOT EXISTS Category(CategoryName TEXT UNIQUE ' +
+      //      'NOT NULL, RedColor INT, GreenColor INT, BlueColor INT, PRIMARY KEY(CategoryName))'
+      // , [], null, (t,error) => console.log(error));
 
       
 
-      tx.executeSql('CREATE TABLE IF NOT EXISTS Notes(NotesID INTEGER UNIQUE NOT NULL, UserEmail TEXT, ' +  
-          'Title TEXT, CategoryName TEXT, Label TEXT, Content TEXT, DateAdded DATE, Deleted TEXT, Pinned TEXT, Synced TEXT,' +
-           'PRIMARY KEY (NotesID) FOREIGN KEY (CategoryName) REFERENCES Category ON DELETE SET NULL ON UPDATE CASCADE ' + 
-           'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)'
-           , [], null, (t,error) => console.log(error));
+      // tx.executeSql('CREATE TABLE IF NOT EXISTS Notes(NotesID INTEGER UNIQUE NOT NULL, UserEmail TEXT, ' +  
+      //     'Title TEXT, CategoryName TEXT, Label TEXT, Content TEXT, DateAdded DATE, Deleted TEXT, Pinned TEXT, Synced TEXT,' +
+      //      'PRIMARY KEY (NotesID) FOREIGN KEY (CategoryName) REFERENCES Category ON DELETE SET NULL ON UPDATE CASCADE ' + 
+      //      'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)'
+      //      , [], null, (t,error) => console.log(error));
 
-      tx.executeSql('INSERT OR IGNORE INTO Category VALUES ("None", 209, 211, 212)'
-      , [], null, (t,error) => console.log(error));
+      // tx.executeSql('INSERT OR IGNORE INTO Category VALUES ("None", 209, 211, 212)'
+      // , [], null, (t,error) => console.log(error));
 
-      tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("DetailedView")'
-      , [], null, (t,error) => console.log(error));
-      tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("BackupEnabled")'
-      , [], null, (t,error) => console.log(error));
-      tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Daily")'
-      , [], null, (t,error) => console.log(error));
+      // tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("DetailedView")'
+      // , [], null, (t,error) => console.log(error));
+      // tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("BackupEnabled")'
+      // , [], null, (t,error) => console.log(error));
+      // tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Daily")'
+      // , [], null, (t,error) => console.log(error));
 
-      tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Weekly")'
-      , [], null, (t,error) => console.log(error));
+      // tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Weekly")'
+      // , [], null, (t,error) => console.log(error));
 
-      tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Monthly")'
-      , [], null, (t,error) => console.log(error));
+      // tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Monthly")'
+      // , [], null, (t,error) => console.log(error));
       
     });
   }, []);
