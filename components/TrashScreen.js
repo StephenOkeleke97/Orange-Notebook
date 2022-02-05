@@ -30,8 +30,8 @@ export default function TrashScreen() {
             db.transaction((tx) => {
                 tx.executeSql(
                 'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "true" ' +
-                'AND N.UserEmail = ?', 
+                'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName ' + 
+                'AND N.UserEmail = C.UserEmail WHERE Deleted = "true" AND N.UserEmail = ?', 
                 [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     // setNotes(_array);
@@ -48,8 +48,8 @@ export default function TrashScreen() {
         db.transaction((tx) => {
             tx.executeSql(
             'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-            'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "true" ' +
-            'AND N.UserEmail = ?', 
+            'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail ' + 
+            'WHERE Deleted = "true" AND N.UserEmail = ?', 
             [CurrentUser.prototype.getUser()],
             (t, { rows: { _array } }) => {
                 // setNotes(_array);
@@ -90,8 +90,8 @@ export default function TrashScreen() {
                     null, (t, error) => console.log(error));
                     tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "true" ' +
-                    'AND N.UserEmail = ?', 
+                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName' + 
+                    ' AND N.UserEmail = C.UserEmail WHERE Deleted = "true" AND N.UserEmail = ?', 
                     [CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => setNotesCallBack(_array), (t, error) => console.log('Error ', error));
                 })
@@ -108,8 +108,8 @@ export default function TrashScreen() {
                     null, (t, error) => console.log(error));
                     tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "true" ' +
-                    'AND N.UserEmail = ?', 
+                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName ' + 
+                    'AND N.UserEmail = C.UserEmail WHERE Deleted = "true" AND N.UserEmail = ?', 
                     [CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => setNotesCallBack(_array), (t, error) => console.log('Error ', error));
                 })

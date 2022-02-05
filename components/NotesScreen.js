@@ -3,7 +3,7 @@ import { View,
     Text,
     StyleSheet,
     TextInput,  
-    TouchableWithoutFeedback,
+    TouchableWithoutFeedback, KeyboardAvoidingView,
     Keyboard} from 'react-native';
 import NoteCard from './NoteCard.js';
 import { useState, useEffect } from 'react';
@@ -28,6 +28,7 @@ export default function NotesScreen({ navigation, route }){
     const [selectedNotes, setSelectedNotes] = useState([]);
     const [triggerSelectAll, setTriggerSelectAll] = useState(false);
     const [detailedView, setDetailedView] = useState(false);
+    const keyboardVerticalOffset = Platform.OS === 'ios' ? 60 : 0
     
     const getNotes = () => {
         if (notesTabActive) {
@@ -35,8 +36,8 @@ export default function NotesScreen({ navigation, route }){
                 route.params === undefined ?
                 tx.executeSql(
                 'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "false" ' +
-                'AND N.UserEmail = ?', 
+                'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName  ' + 
+                'AND N.UserEmail = C.UserEmail WHERE Deleted = "false" AND Pinned = "false" AND N.UserEmail = ?', 
                 [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
@@ -45,8 +46,8 @@ export default function NotesScreen({ navigation, route }){
                 
                 tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "false" ' +
-                    'AND N.CategoryName = ? AND N.UserEmail = ?'
+                    'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail ' + 
+                    'WHERE Deleted = "false" AND Pinned = "false" AND N.CategoryName = ? AND N.UserEmail = ?'
                     , [route.params.category, CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => {
                         setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
@@ -58,8 +59,8 @@ export default function NotesScreen({ navigation, route }){
                 route.params === undefined ?
                 tx.executeSql(
                 'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "true" ' +
-                'AND N.UserEmail = ?',
+                'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail ' +  
+                'WHERE Deleted = "false" AND Pinned = "true" AND N.UserEmail = ?',
                 [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
@@ -68,8 +69,8 @@ export default function NotesScreen({ navigation, route }){
                 
                 tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName WHERE Deleted = "false" AND Pinned = "true" '  +
-                    'AND N.CategoryName = ? AND N.UserEmail = ?'
+                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail' + 
+                    'WHERE Deleted = "false" AND Pinned = "true" AND N.CategoryName = ? AND N.UserEmail = ?'
                     , [route.params.category, CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => {
                         setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
@@ -265,7 +266,10 @@ export default function NotesScreen({ navigation, route }){
     );
 
     return(
-        <View style={styles.container}>
+        <KeyboardAvoidingView style={styles.container} 
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={keyboardVerticalOffset}>
+            <View style={styles.topContainer}>
             <View style={styles.header}>
                 {/* <View style={styles.headerIcon}>
                 <Image 
@@ -415,13 +419,15 @@ export default function NotesScreen({ navigation, route }){
                     size={15}/>
                 </TouchableOpacity> */}
             </View>
+            </View>
             <TouchableWithoutFeedback
             onPress={Keyboard.dismiss}>
             <View style={styles.cardContainer}>
                 {filteredNotes.length > 0 ? <FlatList
                 data={filteredNotes}
                 renderItem={renderItem}
-                keyExtractor={(item, index) => index}/> : <Text style={{color:'#6D6E71'}}>
+                keyExtractor={(item, index) => index}
+                style={styles.flatList}/> : <Text style={{color:'#6D6E71', paddingLeft: 15}}>
                     {notesTabActive ? 'No notes to show' : 'Nothing pinned yet'}</Text>}
                 <TouchableOpacity style={styles.addNoteButton}
                 onPress={() => navigation.navigate('CreateNote', {
@@ -441,7 +447,7 @@ export default function NotesScreen({ navigation, route }){
             </View>
             </TouchableWithoutFeedback>
             
-        </View>
+        </KeyboardAvoidingView>
         
     );
 }
@@ -449,26 +455,41 @@ export default function NotesScreen({ navigation, route }){
 const styles = StyleSheet.create({
     container: {
         flex: 1, 
-        padding: 15, 
-        paddingTop: 30, 
+        paddingBottom: 15, 
+        paddingTop: 60, 
         backgroundColor:'#fff',
     },
 
+    topContainer: {
+        paddingLeft: 15,
+        paddingRight: 15
+    },
+    
     cardContainer: {
-        flex: 0.8,
+        height: '78%'
+    },
+
+    flatList: {
+        // borderWidth: 1,
+        // flex: 0.8,
+        paddingLeft: 15,
+        paddingRight: 15
     },
 
     header: {
         // borderWidth:1,
+        // paddingLeft: 15,
+        // paddingRight: 15,
         // borderBottomWidth: 0.2,
         // borderBottomColor: '#BCBEC0',
-        flex: 0.15,
+        // flex: 0.15,
         flexDirection: 'row',
+        paddingBottom: 30
     },
 
     navTab: {
         // borderWidth: 1,
-        flex: 0.13,
+        // flex: 0.13,
         alignItems: 'flex-end',
         justifyContent: 'center',
     },
@@ -504,7 +525,7 @@ const styles = StyleSheet.create({
     filter: {
         // borderWidth: 1,
         // borderColor: 'red',
-        flex: 0.05,
+        // flex: 0.05,
         flexDirection: 'row',
         paddingBottom: 15
     },
@@ -572,7 +593,8 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         backgroundColor: '#000',
         position: 'absolute',
-        top: '85%',
+        // top: '85%',
+        bottom: '10%',
         left: '80%'
     },
 

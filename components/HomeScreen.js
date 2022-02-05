@@ -4,18 +4,8 @@ Image,
 StyleSheet,
 TouchableOpacity } from 'react-native';
 import { globalStyles } from '../styles/global';
-import { useFonts } from 'expo-font';
 
 export default function HomeScreen({ navigation }) {
-    const [loaded] = useFonts({
-        LatoRegular: require('../assets/fonts/Lato-Regular.ttf'),
-        LatoBold: require('../assets/fonts/Lato-Bold.ttf'),
-      });
-      
-      if (!loaded) {
-        return null;
-      }
-
     return (
         <View style={globalStyles.container}>
             <View style={styles.logoView}>

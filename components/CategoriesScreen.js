@@ -14,10 +14,12 @@ import Category from './Category.js';
 import { useFocusEffect } from '@react-navigation/native';
 import CreateCategory from './CreateCategory.js';
 import * as SQLite from 'expo-sqlite';
+import CurrentUser from '../services/CurrentUser.js';
 
 const db = SQLite.openDatabase('notes.db');
 
 export default function CategoriesScreen( {navigation} ){
+
     const [filteredCategories, setFilteredCategories] = useState([]);
     const [searchedText, setSearchedText] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
@@ -44,16 +46,20 @@ export default function CategoriesScreen( {navigation} ){
         if (selectedCategories.length > 0) {
             selectedCategories.map(categoryName => {
                 db.transaction(tx => {
-                    tx.executeSql('UPDATE Notes SET CategoryName = "None", Deleted = "true" WHERE CategoryName = ?', [categoryName],
+                    tx.executeSql('UPDATE Notes SET CategoryName = "None", Deleted = "true" WHERE CategoryName = ? ' + 
+                    'AND UserEmail = ?', [categoryName, CurrentUser.prototype.getUser()],
                     null, (t, error) => console.log(error));
-                    tx.executeSql('DELETE FROM Category WHERE CategoryName = ?', [categoryName],
+                    tx.executeSql('DELETE FROM Category WHERE CategoryName = ? AND UserEmail = ?'
+                    , [categoryName, CurrentUser.prototype.getUser()],
                     null, (t, error) => console.log(error));
                     tx.executeSql(
                         'SELECT COUNT(NotesID) AS NumOfNotes, C.CategoryName, RedColor, GreenColor, BlueColor ' +
                         'FROM Category C LEFT JOIN Notes N on C.CategoryName = N.CategoryName ' +
+                        'AND C.UserEmail = N.UserEmail WHERE C.UserEmail = ? ' + 
                         'GROUP BY C.CategoryName HAVING C.CategoryName != "None"'
-                        , null,
+                        , [CurrentUser.prototype.getUser()],
                         (t, { rows: { _array } }) => {
+                            console.log(_array);
                             setFilteredCategories(_array.filter((categories) => categories.CategoryName.toLowerCase().includes(searchedText.toLowerCase())))}
                             , (t, error) => console.log('Error ', error));
                 });
@@ -80,8 +86,9 @@ export default function CategoriesScreen( {navigation} ){
                 tx.executeSql(
                 'SELECT COUNT(NotesID) AS NumOfNotes, C.CategoryName, RedColor, GreenColor, BlueColor ' +
                 'FROM Category C LEFT JOIN Notes N on C.CategoryName = N.CategoryName ' +
+                'AND C.UserEmail = N.UserEmail WHERE C.UserEmail = ? ' +
                 'GROUP BY C.CategoryName HAVING C.CategoryName != "None"'
-                , null,
+                , [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     // setNotes(_array);
                     // setFilteredNotes(_array)}
@@ -99,8 +106,9 @@ export default function CategoriesScreen( {navigation} ){
             tx.executeSql(
                 'SELECT COUNT(NotesID) AS NumOfNotes, C.CategoryName, RedColor, GreenColor, BlueColor ' +
                 'FROM Category C LEFT JOIN Notes N on C.CategoryName = N.CategoryName ' +
+                'AND C.UserEmail = N.UserEmail WHERE C.UserEmail = ? ' +
                 'GROUP BY C.CategoryName HAVING C.CategoryName != "None"'
-            , null,
+            , [CurrentUser.prototype.getUser()],
             (t, { rows: { _array } }) => {
                 // setNotes(_array);
                 // setFilteredNotes(_array)}

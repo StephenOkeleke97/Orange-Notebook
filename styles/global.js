@@ -34,8 +34,7 @@ export const globalStyles = StyleSheet.create({
 
       buttonText: {
         color: '#000',
-        fontFamily: 'LatoBold',
-        fontWeight: '700'
+        fontWeight: '500'
       },
 
       headerText: {

@@ -1,42 +1,25 @@
 import React from 'react';
-import { View,
-    FlatList,
-    Text,
-    Image,
-    StyleSheet, Switch,
-    TextInput, TouchableOpacity  } from 'react-native';
-import { deleted, Notes } from '../Notes.js';
-import { useEffect, useState } from 'react';
+import { View, Text,
+    StyleSheet, Switch, TouchableOpacity, Alert  } from 'react-native';
+import { useState } from 'react';
 import { Icon } from 'react-native-elements';
-import Category from './Category.js';
-import NoteCardSlim from './NoteCardSlim.js';
-import {getDetailedDisplay, toggleDetailedDisplay,
-     getBackUpEnabled, toggleBackUpEnabled } from './settings.js'
+import { getDetailedDisplay, toggleDetailedDisplay,
+getTwoFactor, toggleTwoFactor, syncWithLocalDB, deleteUser, logOut } from './settings.js'
 import { useFocusEffect } from '@react-navigation/native';
-import { globalStyles } from '../styles/global.js';
-import UserService from '../services/UserService.js';
 import * as SQLite from 'expo-sqlite';
+import UserService from '../services/UserService.js';
+import CurrentUser from '../services/CurrentUser';
 
 const db = SQLite.openDatabase('notes.db');
 
 export default function SettingsScreen( {navigation} ) {
     const [isDetailedEnabled, setIsDetailedEnabled] = useState(false);
-    const [isBackUpEnabled, setIsBackUpEnabled] = useState(false);
-
-    // useEffect(() => {
-    //     let intervalId = 0;
-    //     if (isBackUpEnabled) {
-    //         intervalId = setInterval(() => {
-    //             console.log("hello");
-    //         }, 5000);
-    //     } 
-    //     return () => {clearInterval(intervalId)};
-    // }, [isBackUpEnabled]);
+    const [twoFactor, setTwoFactor] = useState(false);
 
     useFocusEffect(
     React.useCallback(() => {
         getDetailedDisplay(setDetailEnabledCallBack);
-        getBackUpEnabled(setBackUpEnabledCallBack);
+        getTwoFactor(setTwoFactorCallBack);
     })
     );
 
@@ -44,8 +27,8 @@ export default function SettingsScreen( {navigation} ) {
         setIsDetailedEnabled(bool);
     }
 
-    const setBackUpEnabledCallBack = (bool) => {
-        setIsBackUpEnabled(bool);
+    const setTwoFactorCallBack = (bool) => {
+        setTwoFactor(bool);
     }
 
     const handleNavigateToBackupSettings = () => {
@@ -56,24 +39,62 @@ export default function SettingsScreen( {navigation} ) {
         toggleDetailedDisplay(setDetailEnabledCallBack);
     }
 
-    const toggleEnableBackUp = () => {
-        toggleBackUpEnabled(setBackUpEnabledCallBack);
+    const toggleTwoFactorEnabled = () => {
+        toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack);
     }
 
-    const handleBackupToServer = () => {
-        UserService.backUp();
+    const syncWithServerCallBack = (bool) => {
+        UserService.enableTwoFactor(CurrentUser.prototype.getUser(), bool, syncWithLocalDB);
+    }
+
+    const handleDeleteAccount = () => {
+        Alert.alert("Confirm Delete", "Are you sure you want to delete your account? " +
+        "This action cannot be done", [
+            {
+                text: 'Cancel',
+                style: 'cancel'
+            },
+
+            {
+                text: 'Delete',
+                style: 'destructive',
+                onPress: () => {
+                    UserService.delete(CurrentUser.prototype.getUser(), handleDeleteFromLocalAndLogOut);
+                }
+            }
+        ])
+    }
+
+    const handleDeleteFromLocalAndLogOut = () => {
+        deleteUser(() => {
+            navigation.navigate('Home');
+        })
+    }
+
+    const handleLogOut = () => {
+        Alert.alert("Log out", "You will be logged out of your account", [
+            {
+                text: 'Cancel',
+                style: 'cancel'
+            },
+
+            {
+                text: 'Log out',
+                onPress: () => {
+                    logOut(() => {
+                        navigation.popToTop();
+                    })
+                }
+            }
+        ])
     }
 
     return(
         <View style={styles.container}>
             <View style={styles.mainContainer}>
                 <View style={styles.header}>
-                        {/* <TouchableOpacity style={styles.headerIcons}>
-                            
-                        </TouchableOpacity>             */}
-                        <Text style={styles.titleText}>Settings</Text>
-                       
-                    </View> 
+                        <Text style={styles.titleText}>Settings</Text>  
+                </View> 
             </View>  
             <View style={styles.settingsComponents}>
                 <Text style={{color: '#58595B', fontSize: 15, marginBottom: 10}}>Preferences</Text>
@@ -89,19 +110,23 @@ export default function SettingsScreen( {navigation} ) {
                          />
 
             </TouchableOpacity>  
-            {/* <TouchableOpacity style={globalStyles.yellowButton} onPress={() => handleBackupToServer()}>
-                        <Text>Back Up</Text>
-            </TouchableOpacity> */}
+
             <TouchableOpacity style={styles.settingsComponent}
-            activeOpacity={0.5} onPress={() => handleNavigateToBackupSettings()}>
-                        <Text style={styles.settingsText}>Backup</Text>
-                        {/* <Switch
+            activeOpacity={0.8}>
+                        <Text style={styles.settingsText}>Two-Factor Authentication</Text>
+                        <Switch
                          trackColor={{false: "#F1F2F2", true: "#00DC7D" }}
                          thumbColor={"#fff"}
                          ios_backgroundColor="#3e3e3e"
-                         onValueChange={toggleEnableBackUp}
-                         value={isBackUpEnabled}
-                         /> */}
+                         onValueChange={toggleTwoFactorEnabled}
+                         value={twoFactor}
+                         />
+
+            </TouchableOpacity>  
+           
+            <TouchableOpacity style={styles.settingsComponent}
+            activeOpacity={0.5} onPress={() => handleNavigateToBackupSettings()}>
+                        <Text style={styles.settingsText}>Backup</Text>
                           <Icon
                         name='chevron-right'
                         type='material-community'
@@ -112,29 +137,29 @@ export default function SettingsScreen( {navigation} ) {
 
             <View style={styles.settingsComponents}>
                 <Text style={{color: '#58595B', fontSize: 15, marginBottom: 10}}>Account</Text>
-            <TouchableOpacity style={styles.settingsComponent}
+            {/* <TouchableOpacity style={styles.settingsComponent}
             activeOpacity={0.8}>
-                        <Text style={styles.settingsText}>Reset Password</Text>
+                        <Text style={styles.settingsText}>Change Password</Text>
                         <Icon
                         name='chevron-right'
                         type='material-community'
                         color='#000'/>
-            </TouchableOpacity>  
+            </TouchableOpacity>   */}
             <TouchableOpacity style={styles.settingsComponent}
-            activeOpacity={0.8}>
-                        <Text style={styles.settingsText}>Delete Account</Text>
-                        <Icon
+            activeOpacity={0.5} onPress={handleDeleteAccount}>
+                        <Text style={[styles.settingsText, {color: 'red'}]}>Delete Account</Text>
+                        {/* <Icon
                         name='chevron-right'
                         type='material-community'
-                        color='#000'/>
+                        color='#000'/> */}
             </TouchableOpacity>  
             <TouchableOpacity style={styles.settingsComponent}
-            activeOpacity={0.8}>
+            activeOpacity={0.5} onPress={handleLogOut}>
                         <Text style={styles.settingsText}>Log out</Text>
-                        <Icon
+                        {/* <Icon
                         name='chevron-right'
                         type='material-community'
-                        color='#000'/>
+                        color='#000'/> */}
             </TouchableOpacity>  
             </View>   
         </View>

@@ -6,14 +6,14 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Icon } from 'react-native-elements';
 import { useFonts } from 'expo-font';
 import { globalStyles } from '../styles/global.js';
 import { HideKeyboard } from './HideKeyboard.js';
 import UserService from '../services/UserService.js';
 import CurrentUser from '../services/CurrentUser.js';
-import { initializeSettings } from './settings.js';
+import { initializeSettings, saveLogIn } from './settings.js';
 
 export default function LoginScreen({navigation}) {
     const [email, setEmail] =  useState("");
@@ -44,28 +44,45 @@ export default function LoginScreen({navigation}) {
         }
       }
 
+      const handleLogin = () => {
+        UserService.getTwoFactor(email, (enabled) => {
+          if (enabled) {
+            navigation.navigate("VerifyEmail", {
+              source: 'Login',
+              email: email
+            })
+          } else {
+            CurrentUser.prototype.setUser(email);
+            initializeSettings();
+            saveLogIn(email);
+            navigation.navigate("HomeLoggedIn");
+          }
+        })
+      }
+
+      const handleResetPassword = () => {
+        navigation.navigate('ResetPassword');
+      }
+
       const onSubmit = () => {
-        CurrentUser.prototype.setUser(email);
-        initializeSettings();
-        navigation.navigate("HomeLoggedIn");
-      
-        // if (email === "" || password === ""){
-        //     if (email === ""){
-        //         setEmailValidation("Email address can't be empty.");
-        //     } 
-        //     if (password === ""){
-        //         setPasswordValidation("Password can't be empty.");
-        //     } 
-        // } else {
-        //     if (!validator.validate(email)) {
-        //       setEmailValidation("Please enter a correct email address");
-        //       setPasswordValidation("");
-        //     } else {
-        //         setEmailValidation("");
-        //         setPasswordValidation("");
-        //         UserService.login(email, password, verify);
-        //     }
-        // }
+        const pEmail = email.trim();
+        if (pEmail === "" || password === ""){
+            if (pEmail === ""){
+                setEmailValidation("Email address can't be empty.");
+            } 
+            if (password === ""){
+                setPasswordValidation("Password can't be empty.");
+            } 
+        } else {
+            if (!validator.validate(pEmail)) {
+              setEmailValidation("Please enter a correct email address");
+              setPasswordValidation("");
+            } else {
+                setEmailValidation("");
+                setPasswordValidation("");
+                UserService.login(pEmail, password, handleLogin);
+            }
+        }
      }
 
       return (
@@ -91,14 +108,21 @@ export default function LoginScreen({navigation}) {
                     <TextInput
                         style={styles.inputViewComponents}
                         placeholder='Email Address'
-                        onChangeText={setEmail}
+                        onChangeText={(e) => {
+                          setEmail(e);
+                          setEmailValidation("");
+                        }}
+                        autoCapitalize="none"
                     />
                     <Text style={styles.errorText}>{`${emailValidation}`}</Text>
                     <TextInput
                         style={styles.inputViewComponents}
                         placeholder='Password'
                         secureTextEntry
-                        onChangeText={setPassword}
+                        onChangeText={(e) => {
+                          setPassword(e);
+                          setPasswordValidation("");
+                        }}
                     />
                     <Text style={styles.errorText}>{`${passwordValidation}`}</Text>
             
@@ -106,7 +130,7 @@ export default function LoginScreen({navigation}) {
                     <Text 
                     style={globalStyles.buttonText}>Log in</Text>
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={handleResetPassword}>
                 <Text style={styles.alreadyRegisteredText}>Forgot Password?</Text>
                 </TouchableOpacity>
                 <TouchableOpacity

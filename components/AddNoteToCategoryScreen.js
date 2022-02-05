@@ -8,6 +8,7 @@ import React from "react";
 import { useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import * as SQLite from 'expo-sqlite';
+import CurrentUser from "../services/CurrentUser";
 
 const db = SQLite.openDatabase('notes.db');
 
@@ -19,8 +20,8 @@ export default function AddNoteToCategoryScreen( {route, navigation} ) {
         React.useCallback(() => {
             db.transaction((tx) => {
                 tx.executeSql(
-                'SELECT CategoryName FROM Category C'
-                , null,
+                'SELECT CategoryName FROM Category C WHERE UserEmail = ?'
+                , [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     // setNotes(_array);
                     // setFilteredNotes(_array)}
@@ -45,8 +46,8 @@ export default function AddNoteToCategoryScreen( {route, navigation} ) {
             route.params.selectedNotes.map((note, index, array) => {
                 db.transaction((tx) => {
                     tx.executeSql(
-                    'UPDATE Notes SET CategoryName = ? WHERE NotesID = ?'
-                    , [categoryName, note],
+                    'UPDATE Notes SET CategoryName = ? WHERE NotesID = ? AND UserEmail = ?'
+                    , [categoryName, note, CurrentUser.prototype.getUser()],
                     null
                     , (t, error) => console.log('Error ', error));
                     if (index === array.length - 1)

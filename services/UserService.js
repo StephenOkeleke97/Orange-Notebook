@@ -7,16 +7,20 @@ import { Alert } from "react-native";
 import { getLastBackUpDate, getLastBackUpSize, setLastBackupDate, setLastBackupSize } from "../components/settings";
 
 const auth = {username: "user", password: "password"};
-const getUsersAPI = 'http://10.0.0.47:8080/api/getUsers';
-const postNewUserAPI = 'http://10.0.0.47:8080/api/addUser';
-const verifyOTPAPI = 'http://10.0.0.47:8080/api/verifyOTP';
-const requestNewCodeAPI = 'http://10.0.0.47:8080/api/resendVerification';
-const getNotesAPI = 'http://10.0.0.47:8080/api/getNotes';
-const addNoteAPI = 'http://10.0.0.47:8080/api/addNote';
-const loginAPI = 'http://10.0.0.47:8080/api/login';
-const backUpAPI = 'http://10.0.0.91:8080/api/backup';
-const restoreBackupAPI = 'http://10.0.0.91:8080/api/files/';
-const deleteBackupAPI = 'http://10.0.0.91:8080/api/deleteBackup/';
+const host = 'http://10.0.0.91:8080/api/';
+const verifyEmailAPI = host + 'verifyEmail';
+const postNewUserAPI = host + 'addUser';
+const verifyOTPAPI = host + 'verifyOTP';
+const requestNewCodeAPI = host + 'resendVerification';
+const loginAPI = host + 'login';
+const backUpAPI = host + 'backup';
+const restoreBackupAPI = host + 'files/';
+const deleteBackupAPI = host + 'deleteBackup/';
+const enableTwoFactorAPI = host + 'enableTwoFactor';
+const getTwoFactorAPI = host + 'getTwoFactor';
+const deleteUserAPI = host + 'deleteAccount';
+const resetPasswordAPI = host + 'resetPassword';
+
 
 const db = SQLite.openDatabase('notes.db');
 
@@ -30,7 +34,7 @@ class UserService {
     successWait = 2000;
     
      async backUp(setProgressActiveCallBack, setProgressCallBack, 
-        isAutomatic, isSuccesful) {
+        isAutomatic) {
          let size = 0;
          setProgressActiveCallBack(true);
          setTimeout(() => {
@@ -63,19 +67,16 @@ class UserService {
                     setTimeout(() => {
                         setProgressActiveCallBack(false);
                         setProgressCallBack(0);
-                        if (isAutomatic) isSuccesful(true);
                         this._successAlert("Back Up", isAutomatic);
                     }, this.successWait);
                 } else {
                     this._errorAlert("Back Up", isAutomatic);
                     setProgressActiveCallBack(false);
-                    // if (isAutomatic) isSuccesful(false);
                 }
             }).catch(error => {
                 console.log(error);
                 this._errorAlert("Back Up", isAutomatic);
                 setProgressActiveCallBack(false);
-                // if (isAutomatic) isSuccesful(false);
             });
          }, this.initialWait)
     }
@@ -150,21 +151,46 @@ class UserService {
         }, this.initialWait);
     }
 
-    addUser(email, password, verify) {
-        axios.post(postNewUserAPI, {}, {
+    addUser(userEmail, password, callback) {
+        axios.get(verifyEmailAPI, {
             params: {
-                email,
-                password
+                "userEmail": userEmail,
             },
-            auth: auth
+            auth: auth,
+            timeout: this.timeout
         }).then(response => {
-            verify.goodResponse(response.data);
+            console.log(response.data);
+            if (response.data === true) {
+                this._postUser(userEmail, password, callback);
+            } else {
+                this._userExistsWhenCreateError();
+            }
         }).catch(error => {
-            verify.badResponse();
+            console.log(error);
+            this._errorAlert("Create Account");
         });
     }
 
-    async verifyUser(email, verificationCode, verify) {
+    _postUser(email, password, callback) {
+        axios.post(postNewUserAPI, null, {
+            auth: auth,
+            params: {
+                "email": email,
+                "password": password
+            }
+        }).then(response => {
+            if (response.status === 200) {
+                callback();
+            } else {
+                this._errorAlert("Create Account");
+            }
+        }).catch((error) => {
+            console.log(error);
+            this._errorAlert("Create Account");
+        })
+    }
+
+    async verifyUser(email, verificationCode, callback) {
         await axios.get(verifyOTPAPI, {
             params: {
                 email,
@@ -172,26 +198,30 @@ class UserService {
             },
             auth: auth
         }).then(response => {
-            verify.goodResponse(response.data);
+            if (response.data === true) callback();
+            else this._invalidVerificationCodeAlert();
         }).catch(error => {
-            verify.badResponse();
+            console.log(error);
+            this._errorAlert("Verification");
         });
     }
 
-     resendVerification(email) {
+     resendVerification(email, callback) {
          axios.get(requestNewCodeAPI, {
              params: {
                  email
              },
              auth:auth
          }).then(response => {
-             console.log(response.data);
+             if (callback !== undefined) {
+                 callback();
+             }
          }).catch(error => {
              console.log(error);
          });
      }
 
-     login(email, password, verify) {
+     login(email, password, callback) {
          axios.get(loginAPI, {
              params: {
                  email,
@@ -199,13 +229,91 @@ class UserService {
              },
              auth: auth
          }).then(response => {
-             verify.goodResponse(response.data);
+             if (response.status === 200) {
+                if (response.data === true) callback();
+                else this._invalidUserNameOrPasswordAlert();
+             } else {
+                this._errorAlert("Login");
+            }             
          }).catch(error => {
-             verify.badResponse();
+             console.log(error);
+             this._errorAlert("Login");
          })
      }
 
-     //Private functions 
+     enableTwoFactor(email, boolean, sync) {
+         console.log("called");
+        axios.post(enableTwoFactorAPI, null, {
+            auth: auth,
+            params: {
+                "userEmail": email,
+                enabled: boolean
+            }
+        }).then(response => {
+            if (response.status === 200) {
+                sync();
+            }
+        }).catch(error => {
+            console.log(error);
+        })
+     }
+
+     getTwoFactor(email, callback) {
+         axios.get(getTwoFactorAPI, {
+            params: {
+                "userEmail": email,
+            },
+             auth: auth,
+         }).then(response => {
+             console.log(response.data);
+             if (response.status === 200) {
+                 callback(response.data);
+             } else {
+                 this._errorAlert("Login");
+             }
+         }).catch(error => {
+             console.log(error);
+             this._errorAlert("Login")
+         })
+     }
+
+     delete(email, callback) {
+         axios.delete(deleteUserAPI, {
+             auth: auth,
+             params: {
+                 "userEmail": email,
+             }
+         }).then(response => {
+             if (response.status === 200) {
+                 callback();
+             } else {
+                 this._errorAlert("Delete");
+             }
+         }).catch(error => {
+            this._errorAlert("Delete");
+        })
+     }
+
+     resetPassword(email, password, callback) {
+         axios.put(resetPasswordAPI, null, {
+             auth: auth,
+             params: {
+                "email": email,
+                "password": password
+             }
+         }).then(response => {
+             if (response.status === 200) {
+                 callback();
+             } else {
+                 this._errorAlert("Password Reset");
+             }
+         }).catch(error => {
+             console.log(error.response);
+             this._errorAlert("Password Reset");
+         })
+     }
+
+     //Error alerts 
 
      _errorAlert(action, isAutomatic) {
          if (!isAutomatic) Alert.alert(`${action} Failed`, "Something went wrong. Please try again later");
@@ -217,6 +325,18 @@ class UserService {
 
      _noBackupAlert() {
         Alert.alert("No Backup", "There is no backup associated with this account");
+     }
+
+     _userExistsWhenCreateError() {
+         Alert.alert("Create Account Failed", "There is an account associated with this email");
+     }
+
+     _invalidVerificationCodeAlert() {
+         Alert.alert("Verification Failed", "The code you entered is incorrect");
+     }
+
+     _invalidUserNameOrPasswordAlert() {
+         Alert.alert("Login Failed", "Your email or password is incorrect. Please try again")
      }
 }
 

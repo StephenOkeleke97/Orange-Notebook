@@ -29,40 +29,28 @@ export default function CreateAccountScreen({navigation}) {
         return null;
       }
 
-      const verify = {
-        goodResponse: (response) => {
-          if (response === "Saved") {
-            navigation.navigate('VerifyEmail', {
-              email: email,
-            });
-          } else if (response === "Exists") {
-            alert("There is an account associated with this email address.");
-          } else {
-            alert("Something went wrong. Try again later.");
-          }
-        },
-        badResponse: () => {
-          alert("Something went wrong. Try again later.");
-        }
-      }
-
       const onSubmit = () => {
-        if (email === "" || password === ""){
-            if (email === ""){
+        const pEmail = email.trim();
+        if (pEmail === "" || password === ""){
+            if (pEmail === ""){
               setEmailValidation("Email address can't be empty.");
             } 
             if (password === ""){
               setPasswordValidation("Password can't be empty.");
             } 
         } else {
-            if (!validator.validate(email)) {
+            if (!validator.validate(pEmail)) {
               setEmailValidation("Please enter a correct email address");
               setPasswordValidation("");
             } 
         else {
               setEmailValidation("");
               setPasswordValidation("");
-              UserService.addUser(email, password, verify);
+              UserService.addUser(pEmail, password, () => {
+                navigation.navigate('VerifyEmail', {
+                  email: pEmail,
+                });
+              });
             }
         }
     }
@@ -91,6 +79,7 @@ export default function CreateAccountScreen({navigation}) {
                         style={styles.inputViewComponents}
                         placeholder='Email Address'
                         onChangeText={setEmail}
+                        autoCapitalize="none"
                     />
                     <Text style={styles.errorText}>{`${emailValidation}`}</Text>
                     <TextInput

@@ -4,7 +4,7 @@ import CurrentUser from '../services/CurrentUser';
 const db = SQLite.openDatabase('notes.db');
 
 var detailedDisplay;
-var backupEnabled;
+var twoFactor;
 
 // db.transaction(tx => {
 //     tx.executeSql('SELECT SettingEnabled FROM UserSettings WHERE SettingName = "DetailedView" AND UserEmail = ?',
@@ -28,7 +28,7 @@ var backupEnabled;
 // });
 
 // db.transaction(tx => {
-//     tx.executeSql('SELECT * FROM UserSettings',
+//     tx.executeSql('SELECT * FROM Users',
 //     null, (t, {rows: {_array}}) => {console.log("Array: ", _array)}, (t, error) => console.log(error));
 // });
 
@@ -56,38 +56,63 @@ export function toggleDetailedDisplay(setDetailEnabledCallBack) {
     });
 }
 
-export function getBackUpEnabled(setBackUpEnabledCallBack) {
+export function getTwoFactor(setTwoFactorCallBack) {
     db.transaction(tx => {
-        tx.executeSql('SELECT SettingEnabled FROM UserSettings WHERE SettingName = "BackupEnabled" AND UserEmail = ?',
+        tx.executeSql('SELECT SettingEnabled FROM UserSettings WHERE SettingName = "TwoFactor" AND UserEmail = ?',
         [CurrentUser.prototype.getUser()], (t, {rows: {_array}}) => {
             if (_array[0].SettingEnabled === "1.0") {
-                backupEnabled = true;
-                setBackUpEnabledCallBack(true);
+                twoFactor = true;
+                setTwoFactorCallBack(true);
             } else {
-                backupEnabled = false;
-                setBackUpEnabledCallBack(false);
+                twoFactor = false;
+                setTwoFactorCallBack(false);
             }  
           }, (t, error) => console.log(error));
     });
 }
 
-export function toggleBackUpEnabled(setBackUpEnabledCallBack) {
+export function toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack) {
+    unSyncWhenUpdateLocally();
     db.transaction(tx => {
-        tx.executeSql('UPDATE UserSettings SET SettingEnabled = ? WHERE SettingName = "BackupEnabled" AND UserEmail = ?',
-        [(!backupEnabled), CurrentUser.prototype.getUser()], (() => {
-            setBackUpEnabledCallBack(!backupEnabled)
+        tx.executeSql('UPDATE UserSettings SET SettingEnabled = ? WHERE SettingName = "TwoFactor" AND UserEmail = ?',
+        [(!twoFactor), CurrentUser.prototype.getUser()], (() => {
+            setTwoFactorCallBack(!twoFactor)
+            syncWithServerCallBack(!twoFactor)
         }), (t, error) => console.log(error));
+    });
+}
+
+function unSyncWhenUpdateLocally() {
+    db.transaction((tx) => {
+        tx.executeSql('UPDATE UserSettings SET SettingSynced = "0.0" WHERE UserEmail = ?',
+        [CurrentUser.prototype.getUser()], null, (t, error) => console.log(error));
+    });
+}
+
+export function syncWithLocalDB() {
+    db.transaction((tx) => {
+        tx.executeSql('UPDATE UserSettings SET SettingSynced = "1.0" WHERE UserEmail = ?',
+        [CurrentUser.prototype.getUser()], null, (t, error) => console.log(error));
+    });
+}
+
+export function getSyncStatus(callback) {
+    db.transaction((tx) => {
+        tx.executeSql('SELECT SettingSynced FROM UserSettings WHERE UserEmail = ?',
+        [CurrentUser.prototype.getUser()], (t, {rows: {_array}}) => {
+            callback(_array[0].SettingSynced)
+        }, (t, error) => console.log(error));
     });
 }
 
 export function initializeSettings() {
     db.transaction((tx) => {
-        tx.executeSql('INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled) ' + 
-        ' VALUES (?, "DetailedView", "1.0")', [CurrentUser.prototype.getUser()], 
+        tx.executeSql('INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) ' + 
+        ' VALUES (?, "DetailedView", "1.0", "0.0")', [CurrentUser.prototype.getUser()], 
         null, (t, error) => console.log(error));
 
-        tx.executeSql('INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled) ' + 
-        ' VALUES (?, "BackupEnabled", "1.0")', [CurrentUser.prototype.getUser()], 
+        tx.executeSql('INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) ' + 
+        ' VALUES (?, "TwoFactor", "0.0", "0.0")', [CurrentUser.prototype.getUser()], 
         null, (t, error) => console.log(error));
     });
 }
@@ -136,5 +161,41 @@ export function getLastBackUpSize(callback) {
             callback(_array[0].BackupSize);
         })
     ])
+}
+
+export function deleteUser(callback) {
+    db.transaction(tx => {
+        tx.executeSql('DELETE FROM Users WHERE UserEmail = ?', 
+        [CurrentUser.prototype.getUser()], () => {
+            callback();
+        }, (t, error) => {console.log(error)});
+    })
+}
+
+export function logOut(callback) {
+    db.transaction(tx => {
+        tx.executeSql('UPDATE Users SET LoggedIn = 0 WHERE UserEmail = ?',
+        [CurrentUser.prototype.getUser()], () => {
+            callback();
+        }, (t, error) => console.log(error))
+    })
+}
+
+export function checkIfLoggedIn(callback) {
+    db.transaction(tx => {
+        tx.executeSql('SELECT UserEmail FROM Users WHERE LoggedIn = 1', null,
+        (t, {rows: {_array}}) => {
+            if (_array.length > 0) {
+                callback(true, _array[0].UserEmail);
+            } 
+        })
+    })
+}
+
+export function saveLogIn(email) {
+    db.transaction((tx) => {
+        tx.executeSql('UPDATE Users SET LoggedIn = 1 WHERE UserEmail = ?', 
+        [email], null, (t, error) => console.log(error))
+    })
 }
 

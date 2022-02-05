@@ -8,6 +8,8 @@ import { globalStyles } from '../styles/global';
 import { Icon } from 'react-native-elements';
 import { useState } from 'react';
 import UserService from '../services/UserService';
+import CurrentUser from '../services/CurrentUser';
+import { initializeSettings, saveLogIn } from './settings';
 
  export default function VerifyEmailScreen({ navigation, route} ) {
      const {email} = route.params;
@@ -63,25 +65,23 @@ import UserService from '../services/UserService';
      const onSubmit = () => {
          const verificationCode = `${num1}` + `${num2}` + `${num3}` + `${num4}`;
          if (verificationCode.length < 4) {
-             setErrorText('Code must be have 4 digits');
+             setErrorText('Code must have 4 digits');
          } else {
-            setErrorText('');
-
-            const verify = {
-                goodResponse: (response) => {
-                    if (response){
-                        navigation.navigate('HomeLoggedIn');
-                    } else {
-                        alert("Invalid Verification Code");
-                    }
-                },
-                badResponse: () => {
-                    alert("Something went wrong. Please try again later."); 
-                }
-            }
-
-            UserService.verifyUser(email, verificationCode, verify);
+            UserService.verifyUser(email, verificationCode, handleNavigation);
          }       
+     }
+
+     const handleNavigation = () => {
+         if (route.params.source === 'ResetPassword') {
+             navigation.navigate('CreatePassword', {
+                 email: email,
+             });
+         } else {
+            CurrentUser.prototype.setUser(email);
+            initializeSettings();
+            saveLogIn(email);
+             navigation.navigate('HomeLoggedIn');
+         }
      }
 
     return (
@@ -89,22 +89,19 @@ import UserService from '../services/UserService';
             <View style={{backgroundColor: '#FFF', flex: 0.13}}/>
             <View style={styles.headerView}>
                 <View style={styles.icon}>
-                    <TouchableOpacity>
+                    <TouchableOpacity
+                    onPress={() => navigation.goBack()}>
                         <Icon
-                        size={20}
-                        style={styles.backIcon}
-                        name='arrow-left'
-                        type='feather'
-                        color='#000'
-                        onPress={() => navigation.navigate('CreateAccount')}
-                        />
+                        type='material-community'
+                        name='keyboard-backspace'
+                        style={styles.backIcon}/>
                     </TouchableOpacity>
                 </View>
-                <Text style={styles.headerText}>Verify Email</Text>
+                <Text style={styles.headerText}>Verify</Text>
                 <View style={styles.rightContainer}></View>
             </View>
             <View style={styles.inputView}>
-                <Text style={styles.inputViewText1}>Code is sent to stephenokeleke@yahoo.com</Text>
+                <Text style={styles.inputViewText1}>Code sent to {route.params.email}</Text>
                 <View style={styles.input}>
                     <View style={styles.inputBoxes}>
                         <Text style={styles.inputBoxText}>{num1}</Text>
@@ -127,7 +124,7 @@ import UserService from '../services/UserService';
             <View style={{paddingLeft: 40, paddingRight: 40, backgroundColor: '#FFF', 
             borderBottomLeftRadius: 40, borderBottomRightRadius: 40}}>
              <TouchableOpacity style={styles.yellowButton} onPress={() => onSubmit()}>
-                 <Text style={globalStyles.buttonText}>Verify and Create Account</Text>
+                 <Text style={globalStyles.buttonText}>Verify</Text>
              </TouchableOpacity>
             </View>
 
@@ -137,7 +134,10 @@ import UserService from '../services/UserService';
                         <View key={index} style={styles.keyboardRow}>
                             {section.map((num, index) => {
                                 return(
-                                    <TouchableOpacity key={index} style={styles.keyboardKey} onPress={() => setNum(nextNum, num)}>
+                                    <TouchableOpacity key={index} style={styles.keyboardKey} onPress={() => {
+                                        setNum(nextNum, num);
+                                        setErrorText("");
+                                    }}>
                                         <Text style={styles.keypadText}>{num}</Text>
                                     </TouchableOpacity>
                                 )
@@ -199,9 +199,8 @@ const styles  = StyleSheet.create({
     },
 
     headerText: {
-        fontSize: 18,
-        fontFamily: 'LatoRegular',
-        fontWeight: '300',
+        fontSize: 23,
+        fontWeight: '700',
     },
 
     backIcon: {

@@ -1,7 +1,7 @@
 import { StyleSheet, View, 
     TouchableOpacity, Text } from 'react-native';
 import { Icon } from 'react-native-elements';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import { setBackupFrequency, getBackupFrequency } from './settings';
 import { globalStyles } from '../styles/global';
@@ -10,15 +10,21 @@ const BackupSettingsFrequency = ({ navigation }) => {
     const [dailyActive, setDailyActive] = useState(false);
     const [weeklyActive, setWeeklyActive] = useState(false);
     const [monthlyActive, setMonthlyActive] = useState(false);
+    const [activeFrequency, setActiveFrequency] = useState("");
+    const [newFrequency, setNewFrequency] = useState("");
 
-    useFocusEffect(() => {
-        getBackupFrequency((frequency) => {
-            if (frequency === "Daily") setDailyActive(true);
-            else if (frequency === "Weekly") setWeeklyActive(true);
-            else if (frequency === "Monthly") setMonthlyActive(true);
-            else setDailyActive(true);
-        })
-    });
+    useFocusEffect(
+        React.useCallback(() => {
+            getBackupFrequency((frequency) => {
+                if (frequency === "Daily") setDailyActive(true);
+                else if (frequency === "Weekly") setWeeklyActive(true);
+                else if (frequency === "Monthly") setMonthlyActive(true);
+                else setDailyActive(true);
+                setActiveFrequency(frequency);
+                setNewFrequency(frequency);
+            })
+        }, [activeFrequency])
+    );
 
     const handleDailyActive = () => {
         setBackupFrequency("Daily", () => {
@@ -26,6 +32,7 @@ const BackupSettingsFrequency = ({ navigation }) => {
             setWeeklyActive(false);
             setMonthlyActive(false);
         })
+        setNewFrequency("Daily")
     }
 
     const handleWeeklyActive = () => {
@@ -34,6 +41,7 @@ const BackupSettingsFrequency = ({ navigation }) => {
             setWeeklyActive(true);
             setMonthlyActive(false);
         })
+        setNewFrequency("Weekly");
     }
 
     const handleMonthlyActive = () => {
@@ -42,10 +50,14 @@ const BackupSettingsFrequency = ({ navigation }) => {
             setWeeklyActive(false);
             setMonthlyActive(true);
         })
+        setNewFrequency("Monthly")
     }
 
     const handleBack = () => {
-        navigation.goBack();
+        // navigation.goBack();
+        navigation.navigate('Backup', {
+            changed: activeFrequency !== newFrequency, 
+        })
     }
     return <View style={globalStyles.container}>
         <View style={styles.container}>
@@ -101,7 +113,14 @@ const BackupSettingsFrequency = ({ navigation }) => {
                         color='#5199FF'
                         size={20}/>}                
                     </TouchableOpacity>  
-
+                    <TouchableOpacity style={[globalStyles.yellowButton, {marginBottom: 10}]}
+                    onPress={handleBack}>
+                        <Text>Save</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.extraNoteText}>
+                        Note: This action can also be saved by pressing the back button
+                        at the top-left of the screen.
+                    </Text>
                 </View>
         </View>
     </View>
@@ -172,6 +191,11 @@ const styles = StyleSheet.create({
         fontWeight: '400',
         color: '#000'
     },
+
+    extraNoteText: {
+        color: '#BCBEC0',
+        fontSize: 13
+    }
 })
 
 export default BackupSettingsFrequency

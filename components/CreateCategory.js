@@ -9,6 +9,7 @@ import { useState, useEffect } from 'react';
 import React from 'react';
 import { Icon } from 'react-native-elements';
 import * as SQLite from 'expo-sqlite';
+import CurrentUser from '../services/CurrentUser';
 
 const db = SQLite.openDatabase('notes.db');
 
@@ -73,7 +74,7 @@ export default function CreateCategory( {modalVisible, setModalVisible,
     }
 
     const saveCategory = () => {
-        if (categoryName === "") {
+        if (categoryName.trim() === "") {
             return alert("Please choose a name for this category");
         } 
 
@@ -83,9 +84,10 @@ export default function CreateCategory( {modalVisible, setModalVisible,
             } else {
                 db.transaction((tx) => {
                     tx.executeSql(
-                    'INSERT INTO Category(CategoryName, RedColor, GreenColor, BlueColor) VALUES (' +
-                        '?, ?, ?, ?)' 
-                    , [categoryName.trim(), activeColor.redColor, activeColor.greenColor, activeColor.blueColor],
+                    'INSERT INTO Category(CategoryName, UserEmail, RedColor, GreenColor, BlueColor) VALUES (' +
+                        '?, ?, ?, ?, ?)' 
+                    , [ categoryName.trim(), CurrentUser.prototype.getUser(), activeColor.redColor, 
+                        activeColor.greenColor, activeColor.blueColor],
                     null, (t, error) => {
                         console.log('Error ', error)
                     });
@@ -99,8 +101,9 @@ export default function CreateCategory( {modalVisible, setModalVisible,
                 db.transaction((tx) => {
                     tx.executeSql(
                     'UPDATE Category SET CategoryName = ?, RedColor = ?, GreenColor = ?, BlueColor = ? ' +
-                    'WHERE CategoryName = ?' 
-                    , [categoryName.trim(), activeColor.redColor, activeColor.greenColor, activeColor.blueColor, oldCategory[0]],
+                    'WHERE CategoryName = ? AND UserEmail = ?' 
+                    , [categoryName.trim(), activeColor.redColor, activeColor.greenColor
+                        , activeColor.blueColor, oldCategory[0], CurrentUser.prototype.getUser()],
                     null, (t, error) => {
                         console.log('Error ', error)
                     });
@@ -112,8 +115,8 @@ export default function CreateCategory( {modalVisible, setModalVisible,
             notes.map((note, index, array) => {
                 db.transaction((tx) => {
                     tx.executeSql(
-                    'UPDATE Notes SET CategoryName = ? WHERE NotesID = ?'
-                    , [categoryName, note],
+                    'UPDATE Notes SET CategoryName = ? WHERE NotesID = ? AND ' +
+                    'UserEmail = ?', [categoryName, note, CurrentUser.prototype.getUser()],
                     null
                     , (t, error) => console.log('Error ', error));
                     if (index === array.length - 1)

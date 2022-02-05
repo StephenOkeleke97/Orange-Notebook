@@ -4,10 +4,22 @@ import CategoriesScreen from "./CategoriesScreen";
 import SettingsScreen from "./SettingsScreen";
 import TrashScreen from "./TrashScreen";
 import { Icon } from "react-native-elements";
-
+import { getSyncStatus, syncWithLocalDB } from "./settings";
+import UserService from "../services/UserService";
+import { useEffect } from "react";
+import CurrentUser from "../services/CurrentUser";
 const Tab = createBottomTabNavigator();
 
 export default function HomeLoggedInScreen() {
+  
+    useEffect(() => {
+      getSyncStatus((synced) => {
+        if (synced === "0.0") 
+          UserService.enableTwoFactor(CurrentUser.prototype.getUser() ,synced === "1.0", syncWithLocalDB);
+      });
+    }, []);
+
+
     return (
       <Tab.Navigator initialRouteName='Notes'
       screenOptions={({ route }) => ({
