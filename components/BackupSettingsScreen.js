@@ -7,31 +7,8 @@ import { getBackupFrequency, getLastBackUpDate, getLastBackUpSize,
 setLastBackupDate, setLastBackupSize } from './settings.js';
 import { Icon } from 'react-native-elements';
 import { globalStyles } from '../styles/global';
-import {getBackUpEnabled, toggleBackUpEnabled } from './settings.js';
+import {getBackupEnabled, toggleBackupEnabled } from './settings.js';
 import UserService from '../services/UserService.js';
-import * as BackgroundFetch from 'expo-background-fetch';
-import * as TaskManager from 'expo-task-manager';
-
-const BACKGROUND_FETCH_TASK = 'background-fetch';
-
-TaskManager.defineTask(BACKGROUND_FETCH_TASK, async () => {
-    try {
-        UserService.backUp(()=>{}, ()=>{} , true);
-    } catch (error) {
-        return BackgroundFetch.Result.Failed;
-    }
-    return BackgroundFetch.BackgroundFetchResult.NewData;
-  });
-
-async function registerBackgroundFetchAsync(seconds) {
-    return BackgroundFetch.registerTaskAsync(BACKGROUND_FETCH_TASK, {
-    minimumInterval: seconds, 
-    });
-}
-
-async function unregisterBackgroundFetchAsync() {
-    return BackgroundFetch.unregisterTaskAsync(BACKGROUND_FETCH_TASK);
-}
 
 const BackupSettingsScreen = ( { navigation, route } ) => {
     const backupFrequency = {"Daily": 86400,
@@ -43,17 +20,15 @@ const BackupSettingsScreen = ( { navigation, route } ) => {
     const [lastDate, setLastDate] = useState("");
     const [lastSize, setLastSize] = useState(0);
     const [progressPercent, setProgressPercent] = useState(0 + ' %');
-    const [isRegistered, setIsRegistered] = useState(false);
+    const [backupEnabled, setBackupEnabled] = useState(false);
 
-    const backupFrequencyActiveOpacity = isRegistered ? 0.3 : 1;
+
+    const backupFrequencyActiveOpacity = backupEnabled ? 0.3 : 1;
 
     useFocusEffect(
         React.useCallback(() => {
+            getBackupEnabled(setBackupEnabledCallBack);
             getBackupFrequency((frequency) => setBackupFrequencyLabel(frequency));
-            if (route.params !== undefined && route.params.changed && isRegistered) {
-                unregisterBackgroundFetchAsync();
-                registerBackgroundFetchAsync(backupFrequency[backupFrequencyLabel]);
-            }
 
             getLastBackUpDate((date) => {
                 if (date === null) setLastDate("None");
@@ -69,27 +44,16 @@ const BackupSettingsScreen = ( { navigation, route } ) => {
     useEffect(() => {
         if (backupInProgress) startImageRotateFunction();
         else rotateAnimation.stopAnimation();
-    }, [backupInProgress])
+    }, [backupInProgress]);
 
-    useEffect(() => {
-        checkStatusAsync();
-      }, []);
+    const setBackupEnabledCallBack = (bool) => {
+        setBackupEnabled(bool);
+    }
 
-    const checkStatusAsync = async () => {
-    const isRegistered = await TaskManager.isTaskRegisteredAsync(BACKGROUND_FETCH_TASK);
-    setIsRegistered(isRegistered);
-    };
+    const toggleBackUp = () => {
+        toggleBackupEnabled(setBackupEnabledCallBack);
+    }
 
-    const toggleFetchTask = async () => {
-        if (isRegistered) {
-          await unregisterBackgroundFetchAsync();
-        } else {
-          await registerBackgroundFetchAsync(backupFrequency[backupFrequencyLabel]);
-        }
-    
-        checkStatusAsync();
-    };
-    
     const setProgressActiveCallBack = (boolean) => {
         setBackupInProgress(boolean);
     }
@@ -159,7 +123,7 @@ const BackupSettingsScreen = ( { navigation, route } ) => {
     }
 
     const handleSelectFrequency = () => {
-        if (isRegistered) {
+        if (backupEnabled) {
             navigation.navigate('BackupFrequency');
         }
     }
@@ -189,12 +153,12 @@ const BackupSettingsScreen = ( { navigation, route } ) => {
     }
 
     const backupFrequencyTextStyle = {
-        color: isRegistered ? '#000' : '#D1D3D4'
+        color: backupEnabled ? '#000' : '#D1D3D4'
     }
 
     const backupFrequencyText = {
         fontSize: 15,
-        color: isRegistered ? '#939598' : '#D1D3D4'
+        color: backupEnabled ? '#939598' : '#D1D3D4'
     }
 
     return <View style={globalStyles.container}>
@@ -266,8 +230,8 @@ const BackupSettingsScreen = ( { navigation, route } ) => {
                     trackColor={{false: "#F1F2F2", true: "#00DC7D" }}
                     thumbColor={"#fff"}
                     ios_backgroundColor="#3e3e3e"
-                    onValueChange={toggleFetchTask}
-                    value={isRegistered}
+                    onValueChange={toggleBackUp}
+                    value={backupEnabled}
                     />
                 </TouchableOpacity> 
                 <TouchableOpacity style={[styles.backupFeatures, styles.autoBackup]}
@@ -279,7 +243,7 @@ const BackupSettingsScreen = ( { navigation, route } ) => {
                         <Icon
                         name='chevron-right'
                         type='material-community'
-                        color={isRegistered ? '#939598': '#D1D3D4'}/>
+                        color={backupEnabled ? '#939598': '#D1D3D4'}/>
                     </View>
 
                 </TouchableOpacity>   

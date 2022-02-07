@@ -39,9 +39,9 @@ export default function CreateNotesScreen({ navigation, route}){
         } else {
             db.transaction((tx) => {
                 tx.executeSql(
-                'INSERT INTO Notes(Title, UserEmail, CategoryName, Label, Content, DateAdded, Deleted, Pinned, Synced) VALUES (' +
-                    '?, ?, ?, ?, ?, ?, "false", "false", "false")' 
-                , [titleText, CurrentUser.prototype.getUser(), route.params.category, labelText, contentText, date],
+                'INSERT INTO Notes(Title, UserEmail, CategoryName, Label, Content, DateAdded, TimeStamp, Deleted, Pinned, Synced) VALUES (' +
+                    '?, ?, ?, ?, ?, ?, ?, "false", "false", "false")' 
+                , [titleText, CurrentUser.prototype.getUser(), route.params.category, labelText, contentText, date, d.getTime()],
                 null, (t, error) => console.log('Error ', error));
             });
         }     

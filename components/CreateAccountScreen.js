@@ -16,8 +16,10 @@ import UserService from '../services/UserService.js';
 export default function CreateAccountScreen({navigation}) {
     const [email, setEmail] =  useState("");
     const [password, setPassword] = useState("");
-    const [emailValidation, setEmailValidation] =  useState("");
-    const [passwordValidation, setPasswordValidation] = useState("");
+    const [emailIsError, setEmailIsError] =  useState(false);
+    const [passwordIsError, setPasswordIsError] = useState(false);
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const verifyPassword = /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
     const validator = require("email-validator");
 
     const [loaded] = useFonts({
@@ -31,27 +33,16 @@ export default function CreateAccountScreen({navigation}) {
 
       const onSubmit = () => {
         const pEmail = email.trim();
-        if (pEmail === "" || password === ""){
-            if (pEmail === ""){
-              setEmailValidation("Email address can't be empty.");
-            } 
-            if (password === ""){
-              setPasswordValidation("Password can't be empty.");
-            } 
+        if (!validator.validate(pEmail)) {
+          setEmailIsError(true);
+        } else if (!verifyPassword.test(password)) {
+          setPasswordIsError(true);
         } else {
-            if (!validator.validate(pEmail)) {
-              setEmailValidation("Please enter a correct email address");
-              setPasswordValidation("");
-            } 
-        else {
-              setEmailValidation("");
-              setPasswordValidation("");
-              UserService.addUser(pEmail, password, () => {
-                navigation.navigate('VerifyEmail', {
-                  email: pEmail,
-                });
-              });
-            }
+          UserService.addUser(pEmail, password, () => {
+            navigation.navigate('VerifyEmail', {
+              email: pEmail,
+            });
+          });
         }
     }
 
@@ -69,27 +60,49 @@ export default function CreateAccountScreen({navigation}) {
                         onPress={() => navigation.navigate('Home')}
                         />
                     </TouchableOpacity>
-                <Text style={styles.registerLaterText}>Later</Text>
                 </View>
                 <View style={styles.loginPageHeader}>
                     <Text style={styles.loginPageHeaderText}>Create an Account</Text>
                 </View>
                 <View style={styles.inputView}>
-                    <TextInput
-                        style={styles.inputViewComponents}
-                        placeholder='Email Address'
-                        onChangeText={setEmail}
-                        autoCapitalize="none"
-                    />
-                    <Text style={styles.errorText}>{`${emailValidation}`}</Text>
-                    <TextInput
-                        style={styles.inputViewComponents}
-                        placeholder='Password'
-                        secureTextEntry
-                        onChangeText={setPassword}
-                    />
-                    <Text style={styles.errorText}>{`${passwordValidation}`}</Text>
-            
+                  <View style={styles.textInputContainer}>
+                    <View style={styles.textInput}>
+                      <TextInput
+                          style={[styles.inputViewComponents, {width: '100%'}]}
+                          placeholder='Email Address'
+                          onChangeText={(e) => {
+                            setEmail(e);
+                            if (emailIsError) setEmailIsError(false);
+                          }}
+                          autoCapitalize="none"
+                      />
+                    </View>
+                    {emailIsError && <Text style={styles.errorText}>Please enter a valid email address</Text>}
+                  </View>
+
+                  <View style={styles.textInputContainer}>
+                    <View style={styles.textInput}>
+                      <TextInput
+                          style={styles.inputViewComponents}
+                          placeholder='Password'
+                          secureTextEntry={!passwordVisible}
+                          onChangeText={(e) => {
+                            setPassword(e);
+                            if (passwordIsError) setPasswordIsError(false);
+                          }}
+                      />
+                       <TouchableOpacity onPress={() => {setPasswordVisible(!passwordVisible)}}>
+                        <Icon
+                        type="entypo"
+                        name={passwordVisible ? "eye-with-line" : "eye"}
+                        size={20}
+                        color='#939598'/>
+                      </TouchableOpacity>
+                    </View>
+                    {passwordIsError && <Text style={styles.errorText}>Password must have at least 8 digits and contain one or more of the following:
+                    Uppercase letter, lowercase letter, Number, Special character</Text>}
+                  </View>    
+
                 <TouchableOpacity style={globalStyles.yellowButton} onPress={() => onSubmit()}>
                     <Text 
                     style={globalStyles.buttonText}>Create an Account</Text>
@@ -187,11 +200,24 @@ const styles = StyleSheet.create({
         // borderWidth: 5,
         // borderColor: "pink",
       }, 
+
+      textInputContainer: {
+          marginBottom: 20
+      },
+
+      textInput: {
+        paddingLeft: 15,
+        backgroundColor: '#FFF',
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingRight: 10,
+        marginBottom: 6
+      },
     
       inputViewComponents: {
-        // borderWidth: 1,
-        padding: 15,
-        backgroundColor: '#FFF',
+        height: 45,
+        width: '90%'
         // marginBottom: 25
       },
     

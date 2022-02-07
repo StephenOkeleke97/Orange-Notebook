@@ -16,7 +16,6 @@ import {  DefaultTheme } from '@react-navigation/native';
 import { useEffect, useState } from 'react';
 import * as SQLite from 'expo-sqlite';
 import NotesScreen from './components/NotesScreen';
-import * as FileSystem from 'expo-file-system';
 import CurrentUser from './services/CurrentUser';
 import { checkIfLoggedIn, initializeSettings } from './components/settings';
 import { useFonts } from 'expo-font';
@@ -25,13 +24,6 @@ const db = SQLite.openDatabase('notes.db');
 
 db.exec([{ sql: 'PRAGMA foreign_keys = ON;', args: [] }], false, () =>
 console.log('Foreign keys turned on'));
-
-const fileSystem = async () => {
-  let a = await FileSystem.getInfoAsync(FileSystem.documentDirectory + 'SQLite/notes.db');
-  console.log(a);
-  return a;
-}
-// fileSystem();
 
 const Stack = createNativeStackNavigator();
 
@@ -76,7 +68,7 @@ export default function App() {
       // [], null, (t, error) => console.log(error));
 
       // tx.executeSql('CREATE TABLE IF NOT EXISTS Users(UserID INTEGER UNIQUE NOT NULL, UserEmail TEXT UNIQUE NOT NULL,' +
-      //   'BackupFrequency TEXT, BackupSize INTEGER, BackupDate DATE, LoggedIn INTEGER, PRIMARY KEY(UserID), FOREIGN KEY (BackupFrequency) REFERENCES BackupFrequency(Frequency))',
+      //   'BackupFrequency TEXT, BackupSize INTEGER, BackupDate DATE, LoggedIn INTEGER, NextBackUpDate INT, PRIMARY KEY(UserID), FOREIGN KEY (BackupFrequency) REFERENCES BackupFrequency(Frequency))',
       // [], null, (t, error) => console.log(error));
 
       // tx.executeSql('CREATE TABLE IF NOT EXISTS Settings(SettingName TEXT UNIQUE NOT NULL,' +
@@ -97,7 +89,7 @@ export default function App() {
       
 
       // tx.executeSql('CREATE TABLE IF NOT EXISTS Notes(NotesID INTEGER UNIQUE NOT NULL, UserEmail TEXT, ' +  
-      //     'Title TEXT, CategoryName TEXT, Label TEXT, Content TEXT, DateAdded DATE, Deleted TEXT, Pinned TEXT, Synced TEXT,' +
+      //     'Title TEXT, CategoryName TEXT, Label TEXT, Content TEXT, DateAdded DATE, TimeStamp INT, Deleted TEXT, Pinned TEXT, Synced TEXT,' +
       //      'PRIMARY KEY (NotesID) FOREIGN KEY (CategoryName, UserEmail) REFERENCES Category ON DELETE SET NULL ON UPDATE CASCADE ' + 
       //      'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)'
       //      , [], null, (t,error) => console.log(error));
@@ -107,6 +99,10 @@ export default function App() {
       
       // tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("TwoFactor")'
       // , [], null, (t,error) => console.log(error));
+
+      // tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("BackupEnabled")'
+      // , [], null, (t,error) => console.log(error));
+
       // tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Daily")'
       // , [], null, (t,error) => console.log(error));
 
@@ -133,7 +129,7 @@ export default function App() {
     <NavigationContainer theme={MyTheme}>
       <Stack.Navigator screenOptions={{headerShown: false}} 
       initialRouteName={isLoggedIn ? 'HomeLoggedIn' : 'Home'}>
-        <Stack.Screen name='Home' component={HomeScreen}/>
+        <Stack.Screen name='Home' component={HomeScreen} options={{gestureEnabled:false }}/>
         <Stack.Screen name='CreateAccount' component={CreateAccountScreen}/>
         <Stack.Screen name='Login' component={LoginScreen}/>
         <Stack.Screen name='VerifyEmail' component={VerifyEmailScreen}/>

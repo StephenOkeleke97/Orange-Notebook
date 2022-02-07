@@ -82,7 +82,7 @@ export default function SettingsScreen( {navigation} ) {
                 text: 'Log out',
                 onPress: () => {
                     logOut(() => {
-                        navigation.popToTop();
+                        navigation.navigate('Home');
                     })
                 }
             }

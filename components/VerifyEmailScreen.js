@@ -117,7 +117,11 @@ import { initializeSettings, saveLogIn } from './settings';
                     </View>
                 </View>
                 <Text style={styles.errorText}>{errorText}</Text>
-                <TouchableOpacity onPress={() => UserService.resendVerification(email)}>
+                <TouchableOpacity onPress={() => {
+                    UserService.resendVerification(email, () => {
+                        alert("Verification sent");
+                    });
+                }}>
                  <Text style={styles.inputViewText1}>Didn't receive code? Request again</Text>
                 </TouchableOpacity>
             </View>

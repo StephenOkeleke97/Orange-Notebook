@@ -34,7 +34,7 @@ class UserService {
     successWait = 2000;
     
      async backUp(setProgressActiveCallBack, setProgressCallBack, 
-        isAutomatic) {
+        isAutomatic, automaticCallBack) {
          let size = 0;
          setProgressActiveCallBack(true);
          setTimeout(() => {
@@ -69,6 +69,7 @@ class UserService {
                         setProgressCallBack(0);
                         this._successAlert("Back Up", isAutomatic);
                     }, this.successWait);
+                    if (isAutomatic) automaticCallBack();
                 } else {
                     this._errorAlert("Back Up", isAutomatic);
                     setProgressActiveCallBack(false);
@@ -213,11 +214,14 @@ class UserService {
              },
              auth:auth
          }).then(response => {
-             if (callback !== undefined) {
+             if (response.status === 200) {
                  callback();
+             } else {
+                 alert("Something went wrong. Please try again later");
              }
          }).catch(error => {
              console.log(error);
+             alert("Something went wrong. Please try again later");
          });
      }
 

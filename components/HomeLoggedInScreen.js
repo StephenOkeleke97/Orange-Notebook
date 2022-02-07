@@ -4,20 +4,42 @@ import CategoriesScreen from "./CategoriesScreen";
 import SettingsScreen from "./SettingsScreen";
 import TrashScreen from "./TrashScreen";
 import { Icon } from "react-native-elements";
-import { getSyncStatus, syncWithLocalDB } from "./settings";
+import { getBackupEnabled, getBackupFrequency, getNextBackUpDate, getSyncStatus, syncWithLocalDB, updateNextBackUpDate } from "./settings";
 import UserService from "../services/UserService";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import CurrentUser from "../services/CurrentUser";
 const Tab = createBottomTabNavigator();
 
 export default function HomeLoggedInScreen() {
-  
+  const [backupFrequencyLabel, setBackupFrequencyLabel] = useState("Daily");
+  const [backupEnabled, setBackupEnabled] = useState(false);
+
+  const backupFrequency = {"Daily": 86400000,
+    "Weekly": 604800000,
+    "Monthly": 2419200000};
+
     useEffect(() => {
       getSyncStatus((synced) => {
         if (synced === "0.0") 
           UserService.enableTwoFactor(CurrentUser.prototype.getUser() ,synced === "1.0", syncWithLocalDB);
       });
     }, []);
+
+    useEffect(() => {
+      getBackupEnabled((enabled) => {setBackupEnabled(enabled)});
+      getBackupFrequency((frequency) => setBackupFrequencyLabel(frequency));
+      getNextBackUpDate((date) => {
+        let d = new Date().getTime();
+        if (backupEnabled && d >= date) {
+          UserService.backUp(() => {}, () => {}, true, handleSuccesfulBackUp);
+        }
+      });
+    })
+
+    const handleSuccesfulBackUp = () => {
+      let d = new Date().getTime();
+      updateNextBackUpDate(d + backupFrequency[backupFrequencyLabel]);
+    }
 
 
     return (

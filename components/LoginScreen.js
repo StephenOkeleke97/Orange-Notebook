@@ -18,9 +18,10 @@ import { initializeSettings, saveLogIn } from './settings.js';
 export default function LoginScreen({navigation}) {
     const [email, setEmail] =  useState("");
     const [password, setPassword] = useState("");
-    const [emailValidation, setEmailValidation] =  useState("");
-    const [passwordValidation, setPasswordValidation] = useState("");
     const validator = require("email-validator");
+    const [passwordVisible, setPasswordVisible] = useState(false);
+    const [emailIsError, setEmailIsError] =  useState(false);
+    const [passwordIsError, setPasswordIsError] = useState(false);
 
     const [loaded] = useFonts({
         LatoRegular: require('../assets/fonts/Lato-Regular.ttf'),
@@ -29,19 +30,6 @@ export default function LoginScreen({navigation}) {
       
       if (!loaded) {
         return null;
-      }
-
-      const verify = {
-        goodResponse: (response) => {
-          if (response) {
-            navigation.navigate("HomeLoggedIn");
-          } else {
-            alert('Invalid Email Address or Password');
-          }
-        },
-        badResponse: () => {
-          alert("Something went wrong. Try again later.");
-        }
       }
 
       const handleLogin = () => {
@@ -66,22 +54,12 @@ export default function LoginScreen({navigation}) {
 
       const onSubmit = () => {
         const pEmail = email.trim();
-        if (pEmail === "" || password === ""){
-            if (pEmail === ""){
-                setEmailValidation("Email address can't be empty.");
-            } 
-            if (password === ""){
-                setPasswordValidation("Password can't be empty.");
-            } 
+        if (!validator.validate(pEmail)) {
+          setEmailIsError(true);
+        } else if (password === "") {
+          setPasswordIsError(true);
         } else {
-            if (!validator.validate(pEmail)) {
-              setEmailValidation("Please enter a correct email address");
-              setPasswordValidation("");
-            } else {
-                setEmailValidation("");
-                setPasswordValidation("");
-                UserService.login(pEmail, password, handleLogin);
-            }
+          UserService.login(pEmail, password, handleLogin);
         }
      }
 
@@ -105,27 +83,42 @@ export default function LoginScreen({navigation}) {
                     <Text style={styles.loginPageHeaderText}>Log in</Text>
                 </View>
                 <View style={styles.inputView}>
-                    <TextInput
-                        style={styles.inputViewComponents}
-                        placeholder='Email Address'
-                        onChangeText={(e) => {
-                          setEmail(e);
-                          setEmailValidation("");
-                        }}
-                        autoCapitalize="none"
-                    />
-                    <Text style={styles.errorText}>{`${emailValidation}`}</Text>
-                    <TextInput
-                        style={styles.inputViewComponents}
-                        placeholder='Password'
-                        secureTextEntry
-                        onChangeText={(e) => {
-                          setPassword(e);
-                          setPasswordValidation("");
-                        }}
-                    />
-                    <Text style={styles.errorText}>{`${passwordValidation}`}</Text>
-            
+                  <View style={styles.textInputContainer}> 
+                      <View style={styles.textInput}>
+                        <TextInput
+                          style={[styles.inputViewComponents, {width: '100%'}]}
+                          placeholder='Email Address'
+                          onChangeText={(e) => {
+                            setEmail(e);
+                            setEmailIsError(false);
+                          }}
+                          autoCapitalize="none"
+                        />
+                      </View>
+                      {emailIsError && <Text style={styles.errorText}>Please enter a 
+                      valid email address</Text>}
+                  </View>
+
+                  <View style={styles.textInputContainer}> 
+                      <View style={styles.textInput}>
+                        <TextInput
+                          style={styles.inputViewComponents}
+                          placeholder='Password'
+                          secureTextEntry = {!passwordVisible}
+                          onChangeText={(e) => {
+                            setPassword(e);
+                          }}
+                      />
+                      <TouchableOpacity onPress={() => {setPasswordVisible(!passwordVisible)}}>
+                      <Icon
+                      type="entypo"
+                      name={passwordVisible ? "eye-with-line" : "eye"}
+                      size={20}
+                      color='#939598'/>
+                      </TouchableOpacity>
+                      </View>
+                      {passwordIsError && <Text style={styles.errorText}>Password cannot be empty</Text>}
+                  </View>
                 <TouchableOpacity style={globalStyles.yellowButton} onPress={() => onSubmit()}>
                     <Text 
                     style={globalStyles.buttonText}>Log in</Text>
@@ -227,12 +220,25 @@ const styles = StyleSheet.create({
         // borderWidth: 5,
         // borderColor: "pink",
       }, 
+
+      textInputContainer: {
+        marginBottom: 20
+      },
+
+      textInput: {
+        backgroundColor: '#fff',
+        paddingLeft: 15,
+        marginBottom: 5,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingRight: 10
+      },
     
       inputViewComponents: {
-        // borderWidth: 1,
-        padding: 15,
-        backgroundColor: '#FFF',
-        // marginBottom: 25
+       height: 45,  
+       width: '90%',   
+      //  borderWidth: 1  
       },
     
     //   loginPageButtonText: {

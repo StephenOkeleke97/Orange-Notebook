@@ -37,7 +37,7 @@ export default function NotesScreen({ navigation, route }){
                 tx.executeSql(
                 'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
                 'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName  ' + 
-                'AND N.UserEmail = C.UserEmail WHERE Deleted = "false" AND Pinned = "false" AND N.UserEmail = ?', 
+                'AND N.UserEmail = C.UserEmail WHERE Deleted = "false" AND Pinned = "false" AND N.UserEmail = ? ORDER BY TimeStamp DESC', 
                 [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
@@ -47,7 +47,7 @@ export default function NotesScreen({ navigation, route }){
                 tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
                     'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail ' + 
-                    'WHERE Deleted = "false" AND Pinned = "false" AND N.CategoryName = ? AND N.UserEmail = ?'
+                    'WHERE Deleted = "false" AND Pinned = "false" AND N.CategoryName = ? AND N.UserEmail = ? ORDER BY TimeStamp DESC'
                     , [route.params.category, CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => {
                         setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
@@ -60,7 +60,7 @@ export default function NotesScreen({ navigation, route }){
                 tx.executeSql(
                 'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
                 'FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail ' +  
-                'WHERE Deleted = "false" AND Pinned = "true" AND N.UserEmail = ?',
+                'WHERE Deleted = "false" AND Pinned = "true" AND N.UserEmail = ? ORDER BY TimeStamp DESC',
                 [CurrentUser.prototype.getUser()],
                 (t, { rows: { _array } }) => {
                     setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}
@@ -69,8 +69,8 @@ export default function NotesScreen({ navigation, route }){
                 
                 tx.executeSql(
                     'SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor ' +
-                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail' + 
-                    'WHERE Deleted = "false" AND Pinned = "true" AND N.CategoryName = ? AND N.UserEmail = ?'
+                    'FROM Notes N LEFT JOIN Category C on N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail ' + 
+                    'WHERE Deleted = "false" AND Pinned = "true" AND N.CategoryName = ? AND N.UserEmail = ? ORDER BY TimeStamp DESC'
                     , [route.params.category, CurrentUser.prototype.getUser()],
                     (t, { rows: { _array } }) => {
                         setFilteredNotes(_array.filter((note) => note.Content.toLowerCase().includes(searchedText.toLowerCase())))}

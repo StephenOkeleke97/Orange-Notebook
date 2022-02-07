@@ -6,6 +6,7 @@ import { View,
     Keyboard,
     TouchableWithoutFeedback,
     TouchableOpacity,
+    KeyboardAvoidingView,
     } from 'react-native';
 import { useEffect, useState } from 'react';
 import React from 'react';
@@ -29,6 +30,8 @@ export default function CategoriesScreen( {navigation} ){
     const [reRenderOnSelect, setReRenderOnSelect] = useState(false);
     const [selected, setSelected] = useState(false);
     const [triggerSelectAll, setTriggerSelectAll] = useState(false);
+    const keyboardVerticalOffset = Platform.OS === 'ios' ? 100 : 0;
+
     const addToSelectedCategories = (categoryName) => {
         selectedCategories.push(categoryName);
         setReRenderOnSelect(!reRenderOnSelect);
@@ -165,97 +168,106 @@ export default function CategoriesScreen( {navigation} ){
     );
 
     return (
-        <TouchableWithoutFeedback
-        onPress={() => {Keyboard.dismiss()}}>
-        <View style={styles.container}>
-            <View style={styles.mainContainer}>
-            <View style={styles.header}>
-                    {/* <TouchableOpacity style={styles.headerIcons}/>             */}
-                    <Text style={styles.titleText}>Categories</Text>
-                    <View style={{width: '60%',flexDirection: 'row', justifyContent:'flex-end'}}>
-                    {selectMode  && selectedCategories.length > 0 && <TouchableOpacity style={styles.headerIcons}
-                    onPress={() => handleEdit()}>
-                    <Icon
-                    name='edit'
-                    type='feather'
-                    size={20}/>
-                    </TouchableOpacity>}
-                    {selectMode && selectedCategories.length > 0 && <TouchableOpacity style={styles.headerIcons}
-                    onPress={() => deleteSelectedCategories()}>
-                    <Icon
-                    name='delete-outline'
-                    type='material-community'
-                    size={22}/>
-                    </TouchableOpacity>}
-                    {selectMode && <TouchableOpacity style={styles.headerIcons}
-                    onPress={() => selectAll()}>
-                        <Icon
-                        name='select-all'
-                        type='material-community'
-                        size={22}
-                        color='#FFC11E'/>
-                        {/* <Text style={{color: '#FFC11E'}}>Select All</Text> */}
-                    </TouchableOpacity>}
-                    <TouchableOpacity style={[styles.headerIcons, {width: '22%'}]}
-                    onPress={() => triggerSelectMode()}>
-                    <Text style={{color: '#FFC11E'}}>{!selectMode ? "Select" : "Cancel"}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.headerIcons}
-                    onPress={() => {setCreateMode(true); setModalVisible(!modalVisible)}}>
-                    <Icon
-                    name='pluscircleo'
-                    type='antdesign'
-                    size={21}/>
-                    </TouchableOpacity>
+        <KeyboardAvoidingView style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={keyboardVerticalOffset}>
+            <TouchableWithoutFeedback
+            onPress={() => {Keyboard.dismiss()}}>
+            <View >
+                <View style={styles.topSection}>
+                    <View style={styles.mainContainer}>
+                        <View style={styles.header}>
+                            {/* <TouchableOpacity style={styles.headerIcons}/>             */}
+                            <Text style={styles.titleText}>Categories</Text>
+                            <View style={{width: '60%',flexDirection: 'row', justifyContent:'flex-end'}}>
+                            {selectMode  && selectedCategories.length > 0 && <TouchableOpacity style={styles.headerIcons}
+                            onPress={() => handleEdit()}>
+                            <Icon
+                            name='edit'
+                            type='feather'
+                            size={20}/>
+                            </TouchableOpacity>}
+                            {selectMode && selectedCategories.length > 0 && <TouchableOpacity style={styles.headerIcons}
+                            onPress={() => deleteSelectedCategories()}>
+                            <Icon
+                            name='delete-outline'
+                            type='material-community'
+                            size={22}/>
+                            </TouchableOpacity>}
+                            {selectMode && <TouchableOpacity style={styles.headerIcons}
+                            onPress={() => selectAll()}>
+                                <Icon
+                                name='select-all'
+                                type='material-community'
+                                size={22}
+                                color='#FFC11E'/>
+                                {/* <Text style={{color: '#FFC11E'}}>Select All</Text> */}
+                            </TouchableOpacity>}
+                            <TouchableOpacity style={[styles.headerIcons, {width: '22%'}]}
+                            onPress={() => triggerSelectMode()}>
+                            <Text style={{color: '#FFC11E'}}>{!selectMode ? "Select" : "Cancel"}</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity style={styles.headerIcons}
+                            onPress={() => {setCreateMode(true); setModalVisible(!modalVisible)}}>
+                            <Icon
+                            name='pluscircleo'
+                            type='antdesign'
+                            size={21}/>
+                            </TouchableOpacity>
+                            </View>
+                            
+                        </View> 
+                        <View style={styles.searhBar}>
+                                <TextInput
+                                style={{color: '#939598', fontWeight: '400'}}
+                                placeholder='Search Categories'
+                                onChangeText={setSearchedText}
+                                value={searchedText}/>
+                        </View>  
                     </View>
-                    
-                </View> 
-                <View style={styles.searhBar}>
-                        <TextInput
-                        style={{color: '#939598', fontWeight: '400'}}
-                        placeholder='Search Notes'
-                        onChangeText={setSearchedText}
-                        value={searchedText}/>
-                     </View>  
-            </View>
-                 
-                <View style={styles.filter}>
-                    <View style={styles.activeTabTitle}>
-                        <Text style={{fontSize:15, fontWeight: '500'}}>List Categories</Text>
-                    </View>
-                    {/* <TouchableOpacity style={styles.filterButton}>
-                        <Text style={{color: '#939598', fontSize: 11}}>New</Text>
-                        <Icon
-                        name='select-arrows'
-                        type='entypo'
-                        size={15}/>
-                    </TouchableOpacity> */}
-                </View>     
+                        
+                    <View style={styles.filter}>
+                        <View style={styles.activeTabTitle}>
+                            <Text style={{fontSize:15, fontWeight: '500'}}>List Categories</Text>
+                        </View>
+                        {/* <TouchableOpacity style={styles.filterButton}>
+                            <Text style={{color: '#939598', fontSize: 11}}>New</Text>
+                            <Icon
+                            name='select-arrows'
+                            type='entypo'
+                            size={15}/>
+                        </TouchableOpacity> */}
+                    </View>  
+                </View>
+                
 
-                {filteredCategories.length > 0 ? <View style={{flex: 0.8}}>
-                    <FlatList
-                    data={filteredCategories}
-                    renderItem={renderItem}
-                    keyExtractor={(item, index) => index}
-                    numColumns={2}
-                    />
-                   
-                </View> :
-                <Text>No categories to show</Text>
-                }
-                <CreateCategory modalVisible={modalVisible} setModalVisible={setModal} 
-                filteredCategories={filteredCategories} createMode={createMode} oldCategory={selectedCategories}
-                clearSelection={clearSelection}/>    
-        </View>
-        </TouchableWithoutFeedback>
+                    {filteredCategories.length > 0 ? <View style={styles.categoryFlatListContainer}>
+                        <FlatList
+                        data={filteredCategories}
+                        renderItem={renderItem}
+                        keyExtractor={(item, index) => index}
+                        numColumns={2}
+                        style={styles.categoryFlatList}
+                        />
+                    
+                    </View> :
+                    <Text style={styles.categoryFlatList}>No categories to show</Text>
+                    }
+                    <CreateCategory modalVisible={modalVisible} setModalVisible={setModal} 
+                    filteredCategories={filteredCategories} createMode={createMode} oldCategory={selectedCategories}
+                    clearSelection={clearSelection}/>    
+            </View>
+            </TouchableWithoutFeedback>
+        </KeyboardAvoidingView>
+        
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1, 
-        padding: 15, 
-        paddingTop: 30, 
+        // padding: 15, 
+        paddingTop: 60, 
         backgroundColor:'#fff',
     },
 
@@ -269,8 +281,13 @@ const styles = StyleSheet.create({
         fontFamily: 'LatoBold',
     },
 
+    topSection: {
+        paddingLeft: 15,
+        paddingRight: 15,
+    },
+
     mainContainer: {
-        flex: 0.2,
+        // flex: 0.2,
         // borderWidth: 1,
         borderBottomWidth: 0.3,
         borderBottomColor: '#BCBEC0',
@@ -281,8 +298,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         // borderWidth: 1,
+        paddingBottom: 30
         // borderColor: 'red',
-        flex: 1
+        // flex: 1
     },
 
     headerIcons: {
@@ -296,7 +314,7 @@ const styles = StyleSheet.create({
     filter: {
         // borderWidth: 1,
         // borderColor: 'red',
-        flex: 0.05,
+        // flex: 0.05,
         flexDirection: 'row',
         paddingBottom: 15,
         paddingTop: 15,
@@ -325,4 +343,13 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingLeft: 10
     },
+
+    categoryFlatListContainer: {
+        height: '78%'
+    },
+
+    categoryFlatList: {
+        paddingLeft: 15,
+        paddingRight: 15,
+    }
 });

@@ -4,6 +4,7 @@ import CurrentUser from '../services/CurrentUser';
 const db = SQLite.openDatabase('notes.db');
 
 var detailedDisplay;
+var backupEnabled;
 var twoFactor;
 
 // db.transaction(tx => {
@@ -28,7 +29,7 @@ var twoFactor;
 // });
 
 // db.transaction(tx => {
-//     tx.executeSql('SELECT * FROM Users',
+//     tx.executeSql('SELECT * FROM Notes',
 //     null, (t, {rows: {_array}}) => {console.log("Array: ", _array)}, (t, error) => console.log(error));
 // });
 
@@ -52,6 +53,32 @@ export function toggleDetailedDisplay(setDetailEnabledCallBack) {
         tx.executeSql('UPDATE UserSettings SET SettingEnabled = ? WHERE SettingName = "DetailedView" AND UserEmail = ?',
         [(!detailedDisplay), CurrentUser.prototype.getUser()], (() => {
             setDetailEnabledCallBack(!detailedDisplay);
+        }), (t, error) => console.log(error));
+    });
+}
+
+export function getBackupEnabled(setBackupEnabledCallBack) {
+    db.transaction(tx => {
+        tx.executeSql('SELECT SettingEnabled FROM UserSettings WHERE SettingName = "BackupEnabled" AND UserEmail = ?',
+        [CurrentUser.prototype.getUser()], (t, {rows: {_array}}) => {
+            // if (_array[0].SettingEnabled === "1.0") {
+            //     backupEnabled = true;
+            //     setBackupEnabledCallBack(true);
+            // } else {
+            //     backupEnabled = false;
+            //     setBackupEnabledCallBack(false);
+            // }
+            backupEnabled = _array[0].SettingEnabled === "1.0";
+            setBackupEnabledCallBack(_array[0].SettingEnabled === "1.0");
+        }, (t, error) => console.log(error));
+    });
+}
+
+export function toggleBackupEnabled(setBackupEnabledCallBack) {
+    db.transaction(tx => {
+        tx.executeSql('UPDATE UserSettings SET SettingEnabled = ? WHERE SettingName = "BackupEnabled" AND UserEmail = ?',
+        [(!backupEnabled), CurrentUser.prototype.getUser()], (() => {
+            setBackupEnabledCallBack(!backupEnabled);
         }), (t, error) => console.log(error));
     });
 }
@@ -109,6 +136,10 @@ export function initializeSettings() {
     db.transaction((tx) => {
         tx.executeSql('INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) ' + 
         ' VALUES (?, "DetailedView", "1.0", "0.0")', [CurrentUser.prototype.getUser()], 
+        null, (t, error) => console.log(error));
+
+        tx.executeSql('INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) ' + 
+        ' VALUES (?, "BackupEnabled", "1.0", "0.0")', [CurrentUser.prototype.getUser()], 
         null, (t, error) => console.log(error));
 
         tx.executeSql('INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) ' + 
@@ -196,6 +227,22 @@ export function saveLogIn(email) {
     db.transaction((tx) => {
         tx.executeSql('UPDATE Users SET LoggedIn = 1 WHERE UserEmail = ?', 
         [email], null, (t, error) => console.log(error))
+    })
+}
+
+export function getNextBackUpDate(callback) {
+    db.transaction(tx => {
+        tx.executeSql('SELECT NextBackUpDate FROM Users WHERE UserEmail = ?', 
+        [CurrentUser.prototype.getUser()], (t, {rows:{_array}}) => {
+            callback(_array[0].NextBackUpDate);
+        }, (t, error) => console.log(error));
+    })
+}
+
+export function updateNextBackUpDate(dateInEpoch) {
+    db.transaction(tx => {
+        tx.executeSql('UPDATE Users SET NextBackUpDate = ? WHERE UserEmail = ?', 
+        [dateInEpoch, CurrentUser.prototype.getUser()], null, (t, error) => console.log(error));
     })
 }
 

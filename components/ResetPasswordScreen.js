@@ -12,16 +12,18 @@ const ResetPasswordScreen = ({ navigation }) => {
     const validator = require("email-validator");
 
     const handleNavigateToVerify = () => {
-        UserService.resendVerification(email, () => {
-            if (validator.validate(email)) {
-                navigation.navigate('VerifyEmail', {
-                    source: 'ResetPassword',
-                    email: email
-                });
-            } else {
-                setEmailIsError(true);
-            }
-        })
+        if (validator.validate(email)) {
+            UserService.resendVerification(email, () => {
+             
+                    navigation.navigate('VerifyEmail', {
+                        source: 'ResetPassword',
+                        email: email
+                    });
+            });
+        } else {
+            setEmailIsError(true);
+        }
+        
     }
     return <TouchableWithoutFeedback style={globalStyles.container}
     onPress={() => Keyboard.dismiss()}>
