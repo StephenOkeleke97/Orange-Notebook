@@ -1,221 +1,209 @@
-import { View,
-    FlatList,
-    Text,
-    Image,
-    StyleSheet,
-    ScrollView,
-    TextInput,
-    Keyboard,
-    Dimensions  } from 'react-native';
-import { useEffect, useState } from 'react';
-import { TouchableOpacity } from 'react-native';
-import { Icon } from 'react-native-elements';
-import { HideKeyboard } from './HideKeyboard.js';
-import CurrentUser from '../services/CurrentUser.js';
-import * as SQLite from 'expo-sqlite';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableWithoutFeedback,
+  TextInput,
+  Keyboard,
+  KeyboardAvoidingView,
+} from "react-native";
+import { useState } from "react";
+import { TouchableOpacity } from "react-native";
+import { Icon } from "react-native-elements";
+import CurrentUser from "../services/CurrentUser.js";
+import { createNewNote, editNote } from "./queries.js";
 
-const getSectionHeight = (percent) => {
-    return Dimensions.get('window').height * percent;
-};
+export default function CreateNotesScreen({ navigation, route }) {
+  const d = new Date();
+  const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
+  const [titleText, setTitleText] = useState(route.params.title);
+  const [labelText, setLabelText] = useState(route.params.label);
+  const [contentText, setContentText] = useState(route.params.content);
+  const keyboardVerticalOffset = Platform.OS === "ios" ? 10 : 0;
 
-const db = SQLite.openDatabase('notes.db');
-
-export default function CreateNotesScreen({ navigation, route}){
-    const d = new Date();
-    const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-    const [titleText, setTitleText] = useState(route.params.title)
-    const [labelText, setLabelText] = useState(route.params.label)
-    const [contentText, setContentText] = useState(route.params.content)
-    const [keyboardHeight, setKeyboardHeight] = useState(0);
-
-    const createNote = () => {
-        if (route.params.action === 'Edit') {
-            db.transaction((tx) => {
-                tx.executeSql(
-                'UPDATE Notes SET Title = ?, Label = ?, Content = ?, DateAdded = ? WHERE NotesID = ?'
-                , [titleText, labelText, contentText, date, route.params.id],
-                null, (t, error) => console.log('Error ', error));
-            });
-        } else {
-            db.transaction((tx) => {
-                tx.executeSql(
-                'INSERT INTO Notes(Title, UserEmail, CategoryName, Label, Content, DateAdded, TimeStamp, Deleted, Pinned, Synced) VALUES (' +
-                    '?, ?, ?, ?, ?, ?, ?, "false", "false", "false")' 
-                , [titleText, CurrentUser.prototype.getUser(), route.params.category, labelText, contentText, date, d.getTime()],
-                null, (t, error) => console.log('Error ', error));
-            });
-        }     
-        // route.params.isHome === undefined  ?  navigation.navigate('HomeLoggedIn') :
-        // navigation.navigate('NotesScreen', {
-        //     category: route.params.category
-        //  });
-        goBack();
+  const createNote = () => {
+    if (route.params.action === "Edit") {
+      editNote(titleText, labelText, contentText, date, route.params.id);
+    } else {
+      createNewNote(
+        titleText,
+        CurrentUser.prototype.getUser(),
+        route.params.category,
+        labelText,
+        contentText,
+        date,
+        d.getTime()
+      );
     }
+    goBack();
+  };
 
-    const goBack = () => {
-        route.params.fromHome ? navigation.navigate('HomeLoggedIn') :
-        navigation.navigate('NotesScreen', {
-            category: route.params.category
-         });
-    }
-
-    useEffect(() => {
-        const showSubscription = Keyboard.addListener("keyboardDidShow",
-        (e) => {
-            setKeyboardHeight(e.endCoordinates.height)
+  const goBack = () => {
+    route.params.fromHome
+      ? navigation.navigate("HomeLoggedIn")
+      : navigation.navigate("NotesScreen", {
+          category: route.params.category,
         });
+  };
 
-        const hideSubscription = Keyboard.addListener("keyboardDidHide", 
-        () => {
-            setKeyboardHeight(0);
-        });
+  return (
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={keyboardVerticalOffset}
+    >
+      <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+        <View style={styles.subContainer}>
+          <View style={styles.headerContainer}>
+            <View style={styles.header}>
+              <TouchableOpacity
+                style={[styles.headerIcons, { alignItems: "flex-start" }]}
+                onPress={() => goBack()}
+              >
+                <Icon name="closecircleo" type="antdesign" size={23} />
+              </TouchableOpacity>
+              <Text
+                style={styles.headerText}
+              >{`${route.params.action} Note`}</Text>
+              <TouchableOpacity
+                style={styles.headerIcons}
+                onPress={() => createNote()}
+              >
+                <Icon name="checkcircleo" type="antdesign" size={23} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-        return () => {
-            showSubscription.remove();
-            hideSubscription.remove();
-        };
-    }, []);
-
-    return (
-        <HideKeyboard>
-        <View style={styles.container}>
-                <View style={styles.header}>
-                    <TouchableOpacity style={[styles.headerIcons, {alignItems: 'flex-start'}]}
-                    onPress={() => goBack()}>
-                        <Icon
-                        name='closecircleo'
-                        type='antdesign'
-                        size={23}/>
-                    </TouchableOpacity>        
-                    <Text style={styles.headerText}>{`${route.params.action} Note`}</Text>
-                    <TouchableOpacity style={styles.headerIcons}
-                    onPress={() => createNote()}
-                    >
-                        <Icon
-                        name='checkcircleo'
-                        type='antdesign'
-                        size={23}/>
-                    </TouchableOpacity>
-                </View> 
-                <View style={styles.description}>
-                    <View style={styles.title}>
-                        <TextInput style={styles.titleText}
-                        placeholder='Untitled'
-                        multiline={true}
-                        value={titleText}
-                        onChangeText={setTitleText} />
-                    </View>
-                    <View style={styles.details}>
-                        <View style={styles.categoryPlaceHolder}>
-                            <Text style={styles.labelText}>{route.params.category}</Text>
-                        </View>
-                        <View style={styles.label}>
-                            <TextInput 
-                            style={styles.labelText}
-                            placeholder='Label'
-                            value={labelText}
-                            onChangeText={setLabelText}/>      
-                        </View>
-                    </View>
-                </View>  
-                <View style={[styles.editor, 
-                    {height: getSectionHeight(0.72) - keyboardHeight}
-                    ]}>
-                    <TextInput style={{width: '100%', height:'100%', padding: 5, fontSize:15}}
-                    multiline={true}
-                    autoFocus={true}
-                    value={contentText}
-                    onChangeText={setContentText}
-                    />
-                </View>                       
+          <View style={styles.description}>
+            <View style={styles.title}>
+              <TextInput
+                style={styles.titleText}
+                placeholder="Untitled"
+                multiline={true}
+                value={titleText}
+                onChangeText={setTitleText}
+              />
+            </View>
+            <View style={styles.details}>
+              <View style={styles.categoryPlaceHolder}>
+                <Text style={styles.labelText} numberOfLines={1}>
+                  {route.params.category}
+                </Text>
+              </View>
+              <View style={styles.label}>
+                <TextInput
+                  style={styles.labelText}
+                  placeholder="Label"
+                  value={labelText}
+                  onChangeText={setLabelText}
+                />
+              </View>
+            </View>
+          </View>
+          <View style={styles.editor}>
+            <TextInput
+              style={styles.editorTextInput}
+              multiline={true}
+              value={contentText}
+              onChangeText={setContentText}
+              selectionColor={"#FFE9A0"}
+            />
+          </View>
         </View>
-        </HideKeyboard>
-    );
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1, 
-        padding: 15, 
-        paddingTop: 30, 
-        backgroundColor:'#fff',
-    },
+  container: {
+    flex: 1,
+    paddingTop: 60,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
 
-    homeImage: {
-        width: 35,
-        height: 35,
-    },
+  subContainer: {
+    flex: 1,
+  },
 
-    headerText: {
-        fontSize: 20,
-        fontFamily: 'LatoBold',
-    },
+  headerContainer: {
+    paddingLeft: 15,
+    paddingRight: 15,
+  },
 
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        // borderWidth: 1,
-        borderBottomWidth: 0.3,
-        borderBottomColor: '#BCBEC0',
-        // borderColor: 'red',
-        // flex: 0.13,
-        height: getSectionHeight(0.1),
-    },
+  headerText: {
+    fontSize: 20,
+    fontFamily: "LatoBold",
+  },
 
-    headerIcons: {
-        width: '20%',
-        justifyContent: 'center',
-        alignItems: 'flex-end',
-    },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderBottomWidth: 0.3,
+    borderBottomColor: "#BCBEC0",
+    paddingBottom: 30,
+  },
 
-    title: {
-        // borderWidth:1,
-        height: 50,
-        justifyContent: 'flex-end'
-    },
+  headerIcons: {
+    width: "20%",
+    justifyContent: "center",
+    alignItems: "flex-end",
+  },
 
-    titleText: {
-        fontSize: 17,
-        fontFamily: 'LatoBold',
-    },
+  title: {
+    paddingTop: 10,
+    paddingBottom: 20,
+    justifyContent: "flex-end",
+  },
 
-    description: {
-        // borderWidth: 1,
-        height: getSectionHeight(0.12)
-    },
+  titleText: {
+    fontSize: 17,
+    fontFamily: "LatoBold",
+  },
 
-    details: {
-        borderBottomWidth: 0.3,
-        borderBottomColor: '#BCBEC0',
-        paddingBottom: 10,
-        flexDirection: 'row',
-        height: 50,
-        alignItems: 'center'
-    },
+  description: {
+    paddingLeft: 15,
+    paddingRight: 15,
+  },
 
-    label: {
-        // borderWidth: 1,
-        width: '85%',
-        paddingLeft: 10
+  details: {
+    borderBottomWidth: 0.3,
+    borderBottomColor: "#BCBEC0",
+    paddingBottom: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingBottom: 20,
+  },
 
-    },
+  label: {
+    width: "85%",
+    paddingLeft: 10,
+  },
 
-    categoryPlaceHolder: {
-        borderRightWidth: 0.2,
-        borderRightColor: '#939598',
-        width: '15%',
-    },
+  categoryPlaceHolder: {
+    borderRightWidth: 0.2,
+    borderRightColor: "#939598",
+    width: "15%",
+    height: 18,
+  },
 
-    labelText: {
-        fontSize: 15,
-        fontWeight: '500',
-        color: '#58595B',
-    },
+  labelText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#58595B",
+  },
 
-    editor: {
-        // borderWidth: 1,
-        // borderColor: 'red',
-        paddingTop: 10
-    }
+  editor: {
+    paddingTop: 10,
+    flex: 1,
+  },
+
+  editorTextInput: {
+    flexGrow: 1,
+    paddingLeft: 15,
+    paddingRight: 15,
+    fontSize: 15,
+  },
 });

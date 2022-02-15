@@ -48,71 +48,6 @@ export default function App() {
 
   useEffect(() => {
     checkIfLoggedIn(handleCheckLoggedIn);
-    db.transaction((tx) => {
-      // tx.executeSql('SELECT * FROM Category', [], (t, {rows: {_array}}) => console.log(_array), (t, error) => console.log(error));
-
-      // tx.executeSql('DROP TABLE IF EXISTS Category', [], null, (t, error) => console.log(error));
-
-      // tx.executeSql( 'DROP TABLE IF EXISTS Notes', [], null, (t, error) => console.log(error));
-      
-      // tx.executeSql( 'DROP TABLE IF EXISTS UserSettings', [], null, (t, error) => console.log(error));
-
-      // tx.executeSql( 'DROP TABLE IF EXISTS Settings', [], null, (t, error) => console.log(error));
-
-      // tx.executeSql( 'DROP TABLE IF EXISTS Users', [], null, (t, error) => console.log(error));
-
-      // tx.executeSql( 'DROP TABLE IF EXISTS BackupFrequency', [], null, (t, error) => console.log(error));
-
-      // tx.executeSql('CREATE TABLE IF NOT EXISTS BackupFrequency(Frequency [Daily, Weekly, Monthly] UNIQUE NOT NULL,' +
-      //   'PRIMARY KEY(Frequency))',
-      // [], null, (t, error) => console.log(error));
-
-      // tx.executeSql('CREATE TABLE IF NOT EXISTS Users(UserID INTEGER UNIQUE NOT NULL, UserEmail TEXT UNIQUE NOT NULL,' +
-      //   'BackupFrequency TEXT, BackupSize INTEGER, BackupDate DATE, LoggedIn INTEGER, NextBackUpDate INT, PRIMARY KEY(UserID), FOREIGN KEY (BackupFrequency) REFERENCES BackupFrequency(Frequency))',
-      // [], null, (t, error) => console.log(error));
-
-      // tx.executeSql('CREATE TABLE IF NOT EXISTS Settings(SettingName TEXT UNIQUE NOT NULL,' +
-      //   'PRIMARY KEY(SettingName))',
-      // [], null, (t, error) => console.log(error));
-
-      // tx.executeSql( 'CREATE TABLE IF NOT EXISTS UserSettings(UserEmail TEXT NOT NULL, SettingName ' +
-      // 'TEXT NOT NULL, SettingEnabled TEXT NOT NULL, SettingSynced TEXT, PRIMARY KEY(UserEmail, SettingName), ' +
-      // 'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE FOREIGN KEY(SettingName) REFERENCES Settings(SettingName) ON DELETE RESTRICT)', 
-      // [], null, (t, error) => console.log(error));
-
-      // tx.executeSql(
-      //   'CREATE TABLE IF NOT EXISTS Category(CategoryName TEXT NOT NULL, UserEmail TEXT, ' +
-      //      'RedColor INT, GreenColor INT, BlueColor INT, PRIMARY KEY(CategoryName, UserEmail), ' + 
-      //      'FOREIGN KEY (UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)'
-      // , [], null, (t,error) => console.log(error));
-
-      
-
-      // tx.executeSql('CREATE TABLE IF NOT EXISTS Notes(NotesID INTEGER UNIQUE NOT NULL, UserEmail TEXT, ' +  
-      //     'Title TEXT, CategoryName TEXT, Label TEXT, Content TEXT, DateAdded DATE, TimeStamp INT, Deleted TEXT, Pinned TEXT, Synced TEXT,' +
-      //      'PRIMARY KEY (NotesID) FOREIGN KEY (CategoryName, UserEmail) REFERENCES Category ON DELETE SET NULL ON UPDATE CASCADE ' + 
-      //      'FOREIGN KEY(UserEmail) REFERENCES Users(UserEmail) ON DELETE CASCADE)'
-      //      , [], null, (t,error) => console.log(error));
-
-      // tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("DetailedView")'
-      // , [], null, (t,error) => console.log(error));
-      
-      // tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("TwoFactor")'
-      // , [], null, (t,error) => console.log(error));
-
-      // tx.executeSql('INSERT OR IGNORE INTO Settings VALUES ("BackupEnabled")'
-      // , [], null, (t,error) => console.log(error));
-
-      // tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Daily")'
-      // , [], null, (t,error) => console.log(error));
-
-      // tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Weekly")'
-      // , [], null, (t,error) => console.log(error));
-
-      // tx.executeSql('INSERT OR IGNORE INTO BackupFrequency VALUES ("Monthly")'
-      // , [], null, (t,error) => console.log(error));
-      
-    });
   }, []);
 
   const [loaded] = useFonts({
@@ -124,7 +59,6 @@ export default function App() {
     return null;
   }
     
-  // options={{gestureEnabled:false }}
   return (
     <NavigationContainer theme={MyTheme}>
       <Stack.Navigator screenOptions={{headerShown: false}} 
