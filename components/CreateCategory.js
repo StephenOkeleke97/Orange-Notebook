@@ -10,7 +10,6 @@ import {
 import { useState, useEffect } from "react";
 import React from "react";
 import { Icon } from "react-native-elements";
-import CurrentUser from "../services/CurrentUser";
 import { createCategory, updateNoteCategories, editCategory } from "./queries";
 
 export default function CreateCategory({
@@ -87,55 +86,66 @@ export default function CreateCategory({
     }
 
     if (createMode) {
-      if (
-        filteredCategories
-          .map((x) => x.CategoryName.toLowerCase())
-          .includes(categoryName.trim().toLowerCase())
-      ) {
-        return alert(
-          "This name is already taken. Please choose a different name"
-        );
-      } else {
-        createCategory(
-          categoryName.trim(),
-          CurrentUser.prototype.getUser(),
-          activeColor.redColor,
-          activeColor.greenColor,
-          activeColor.blueColor,
-          () => {
-            if (notes != null) {
-              updateNoteCategories(
-                notes,
-                categoryName,
-                CurrentUser.prototype.getUser(),
-                () => {
-                  navigation.navigate("HomeLoggedIn");
-                }
-              );
-            }
-          }
-        );
-      }
+      handleSaveCreateMode();
     } else {
-      if (
-        filteredCategories
-          .filter((category) => category.CategoryName !== oldCategory[0])
-          .map((x) => x.CategoryName.toLowerCase())
-          .includes(categoryName.trim().toLowerCase())
-      ) {
-        return alert(
-          "This name is already taken. Please choose a different name"
-        );
-      } else {
-        editCategory(
-          categoryName.trim(),
-          activeColor.redColor,
-          activeColor.greenColor,
-          activeColor.blueColor,
-          oldCategory[0],
-          CurrentUser.prototype.getUser()
-        );
-      }
+      handleSaveEditMode();
+    }
+  };
+
+  const handleSaveCreateMode = () => {
+    if (
+      filteredCategories
+        .map((x) => x.CategoryName.toLowerCase())
+        .includes(categoryName.trim().toLowerCase())
+    ) {
+      return alert(
+        "This name is already taken. Please choose a different name"
+      );
+    } else {
+      createCategory(
+        categoryName.trim(),
+        activeColor.redColor,
+        activeColor.greenColor,
+        activeColor.blueColor,
+        updateNotesOfCategoryAfterSave
+      );
+    }
+
+    setModalVisible(false);
+    setCategoryName("");
+  };
+
+  const updateNotesOfCategoryAfterSave = () => {
+    if (notes != null) {
+      updateNoteCategories(
+        notes,
+        categoryName,
+        () => {
+          navigation.navigate("HomeLoggedIn");
+        }
+      );
+    }
+  };
+
+  const handleSaveEditMode = () => {
+    if (
+      filteredCategories
+        .filter((category) => category.CategoryName !== oldCategory[0])
+        .map((x) => x.CategoryName.toLowerCase())
+        .includes(categoryName.trim().toLowerCase())
+    ) {
+      return alert(
+        "This name is already taken. Please choose a different name"
+      );
+    } else {
+      editCategory(
+        categoryName.trim(),
+        activeColor.redColor,
+        activeColor.greenColor,
+        activeColor.blueColor,
+        oldCategory[0],
+      );
+      handleClearSelection();
     }
 
     setModalVisible(false);
@@ -178,12 +188,7 @@ export default function CreateCategory({
               setActiveColor(colors.blue);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#64C7FF"
-            />
+            <Icon name="circle" type="material-community" color="#64C7FF" />
           </TouchableOpacity>
           <TouchableOpacity
             style={
@@ -195,12 +200,7 @@ export default function CreateCategory({
               setActiveColor(colors.yellow);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#FFEB7F"
-            />
+            <Icon name="circle" type="material-community" color="#FFEB7F" />
           </TouchableOpacity>
           <TouchableOpacity
             style={greenActive && { backgroundColor: "#FFF", borderRadius: 50 }}
@@ -210,12 +210,7 @@ export default function CreateCategory({
               setActiveColor(colors.green);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#5BFF62"
-            />
+            <Icon name="circle" type="material-community" color="#5BFF62" />
           </TouchableOpacity>
           <TouchableOpacity
             style={redActive && { backgroundColor: "#FFF", borderRadius: 50 }}
@@ -225,12 +220,7 @@ export default function CreateCategory({
               setActiveColor(colors.red);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#F375F3"
-            />
+            <Icon name="circle" type="material-community" color="#F375F3" />
           </TouchableOpacity>
           <TouchableOpacity
             style={
@@ -242,12 +232,7 @@ export default function CreateCategory({
               setActiveColor(colors.purple);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#F6522E"
-            />
+            <Icon name="circle" type="material-community" color="#F6522E" />
           </TouchableOpacity>
         </View>
 
@@ -266,7 +251,6 @@ export default function CreateCategory({
             style={styles.buttons}
             onPress={() => {
               saveCategory();
-              handleClearSelection();
             }}
           >
             <Text style={styles.buttonText}>Save</Text>

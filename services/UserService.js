@@ -1,13 +1,12 @@
 import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { FileSystemSessionType } from "expo-file-system";
-import CurrentUser from "./CurrentUser";
 import * as SQLite from "expo-sqlite";
 import { Alert } from "react-native";
 import { setLastBackupDate, setLastBackupSize } from "../components/settings";
 
 const auth = { username: "user", password: "password" };
-const host = "http://10.0.0.91:8080/api/";
+const host = "http://192.168.1.124:8080/api/";
 const verifyEmailAPI = host + "verifyEmail";
 const postNewUserAPI = host + "addUser";
 const verifyOTPAPI = host + "verifyOTP";
@@ -28,9 +27,9 @@ const db = SQLite.openDatabase("notes.db");
 class UserService {
   timeout = 10000;
   initialWait = 5000;
-  successWait = 2000;
 
   async backUp(
+    email,
     setProgressActiveCallBack,
     setProgressCallBack,
     isAutomatic,
@@ -44,7 +43,7 @@ class UserService {
       data.append("file", {
         uri: path,
         type: "db",
-        name: `${CurrentUser.prototype.getUser()}backup`,
+        name: `${email}backup`,
       });
 
       axios
@@ -71,13 +70,11 @@ class UserService {
             }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
             setLastBackupDate(date);
             setLastBackupSize(size / 100000);
-            setTimeout(() => {
-              setProgressActiveCallBack(false);
-              setProgressCallBack(0);
-              this._successAlert("Back Up", isAutomatic);
-            }, this.successWait);
+            setProgressActiveCallBack(false);
+            setProgressCallBack(0);
+            this._successAlert("Back Up", isAutomatic);
             if (isAutomatic) automaticCallBack();
-            this.updateLastBackUpInfo(5, date, size / 100000);
+            this.updateLastBackUpInfo(email, 5, date, size / 100000);
           } else {
             this._errorAlert("Back Up", isAutomatic);
             setProgressActiveCallBack(false);
@@ -92,6 +89,7 @@ class UserService {
   }
 
   restoreBackup(
+    email,
     setProgressActiveCallBack,
     setProgressCallBack,
     updateLastDateAndSize,
@@ -100,75 +98,79 @@ class UserService {
   ) {
     setProgressActiveCallBack(true);
     setTimeout(() => {
-      axios
-        .get(restoreBackupAPI + `${CurrentUser.prototype.getUser()}backup`, {
-          auth: auth,
-          timeout: this.timeout,
-        })
-        .then((response) => {
-          FileSystem.createDownloadResumable(
-            restoreBackupAPI + `${CurrentUser.prototype.getUser()}backup`,
-            FileSystem.documentDirectory + "SQLite/notes.db",
-            {
-              sessionType: FileSystemSessionType.BACKGROUND,
-            },
-            (progress) => {
-              let percentCompleted = Math.floor(
-                (progress.totalBytesExpectedToWrite /
-                  progress.totalBytesWritten) *
-                  100
-              );
-              setProgressCallBack(percentCompleted + "%");
-            },
-            null
-          )
-            .downloadAsync()
-            .then((response) => {
-              if (response.status === 200) {
-                db._db.close();
-                updateLastDateAndSize(lastDate, lastSize);
-                setTimeout(() => {
-                  setProgressActiveCallBack(false);
-                  setProgressCallBack(0);
-                  this._successAlert("Restore");
-                }, this.successWait);
-              } else {
-                this._errorAlert("Restore");
-                setProgressActiveCallBack(false);
-              }
-            });
-        })
-        .catch((error) => {
-          console.log(error.response);
-          if (error.response === undefined) this._errorAlert("Restore");
-          else if (error.response.status === 404) this._noBackupAlert();
-          else this._errorAlert("Restore");
-          setProgressActiveCallBack(false);
-        });
+      this._checkIfBackupExists(email, setProgressActiveCallBack, () => {
+        FileSystem.createDownloadResumable(
+          restoreBackupAPI + `${email}backup`,
+          FileSystem.documentDirectory + "SQLite/notes.db",
+          {
+            sessionType: FileSystemSessionType.BACKGROUND,
+          },
+          (progress) => {
+            let percentCompleted = Math.floor(
+              (progress.totalBytesExpectedToWrite /
+                progress.totalBytesWritten) *
+                100
+            );
+            setProgressCallBack(percentCompleted + "%");
+          },
+          null
+        )
+          .downloadAsync()
+          .then(() => {
+            db._db.close();
+            updateLastDateAndSize(lastDate, lastSize);
+            setProgressActiveCallBack(false);
+            setProgressCallBack(0);
+            this._successAlert("Restore");
+          })
+          .catch(() => {
+            this._errorAlert("Restore");
+            setProgressActiveCallBack(false);
+          });
+      });
     }, this.initialWait);
   }
 
-  deleteBackup(setProgressActiveCallBack, setProgressCallBack) {
+  _checkIfBackupExists(email, setProgressActiveCallBack, callback) {
+    const uri = host + "backupexists/";
+    axios
+      .get(uri + `${email}backup`, {
+        auth: auth,
+        timeout: this.timeout,
+      })
+      .then(() => {
+        callback();
+      })
+      .catch((error) => {
+        if (error.response && error.response.status === 404) {
+          this._noBackupAlert();
+          setProgressActiveCallBack(false);
+        } else {
+          this._errorAlert("Restore");
+          setProgressActiveCallBack(false);
+        }
+      });
+  }
+
+  deleteBackup(email, setProgressActiveCallBack, setProgressCallBack) {
     setProgressActiveCallBack(true);
     setProgressCallBack("deleting...");
     setTimeout(() => {
       axios
-        .delete(deleteBackupAPI + `${CurrentUser.prototype.getUser()}backup`, {
+        .delete(deleteBackupAPI + `${email}backup`, {
           auth: auth,
           timeout: this.timeout,
           params: {
-            "userEmail": CurrentUser.prototype.getUser()
-          }
+            userEmail: email,
+          },
         })
         .then((response) => {
           if (response.status === 200) {
-            setTimeout(() => {
-              setLastBackupDate(null);
-              setLastBackupSize(null);
-              setProgressActiveCallBack(false);
-              setProgressCallBack(0);
-              this._successAlert("Delete");
-            }, this.successWait);
+            setLastBackupDate(null);
+            setLastBackupSize(null);
+            setProgressActiveCallBack(false);
+            setProgressCallBack(0);
+            this._successAlert("Delete");
           } else {
             this._errorAlert("Delete");
             setProgressActiveCallBack(false);
@@ -293,23 +295,18 @@ class UserService {
       });
   }
 
-  enableTwoFactor(email, boolean, sync) {
-    console.log("called");
+  enableTwoFactor(email, enable, failure) {
     axios
       .post(enableTwoFactorAPI, null, {
         auth: auth,
         params: {
           userEmail: email,
-          enabled: boolean,
+          enabled: enable,
         },
-      })
-      .then((response) => {
-        if (response.status === 200) {
-          sync();
-        }
       })
       .catch((error) => {
         console.log(error);
+        failure();
       });
   }
 
@@ -377,11 +374,11 @@ class UserService {
       });
   }
 
-  updateLastBackUpInfo(retries, date, size) {
+  updateLastBackUpInfo(email, retries, date, size) {
     axios
       .put(updateLastBackUpAPI, null, {
         params: {
-          userEmail: CurrentUser.prototype.getUser(),
+          userEmail: email,
           date: date,
           size: size,
         },
@@ -389,16 +386,18 @@ class UserService {
       })
       .catch((error) => {
         if (retries > 0) {
-          this.updateLastBackUpDate(retries - 1, date);
+          setTimeout(() => {
+            this.updateLastBackUpInfo(email, retries - 1, date, size);
+          }, 60000);
         }
       });
   }
 
-  getLastBackUpInfo(getLastBackUpCallback) {
+  getLastBackUpInfo(email, getLastBackUpCallback) {
     axios
       .get(getLastBackUpAPI, {
         params: {
-          userEmail: CurrentUser.prototype.getUser(),
+          userEmail: email,
         },
         auth: auth,
       })

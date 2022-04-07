@@ -9,7 +9,6 @@ import CreateCategory from "./CreateCategory";
 import React from "react";
 import { useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import CurrentUser from "../services/CurrentUser";
 import { selectCategories, updateNoteCategories } from "./queries";
 
 export default function AddNoteToCategoryScreen({ route, navigation }) {
@@ -18,17 +17,19 @@ export default function AddNoteToCategoryScreen({ route, navigation }) {
 
   useFocusEffect(
     React.useCallback(() => {
-      selectCategories(CurrentUser.prototype.getUser(), (array) => {
-        array.forEach((item, index) => {
-          if (item.CategoryName === "None") {
-            array.splice(index, 1);
-            array.unshift(item);
-          }
-        });
-        setCategories(array);
-      });
+      selectCategories(selectCategoriesCallback);
     }, [])
   );
+
+  const selectCategoriesCallback = (array) => {
+    array.forEach((item, index) => {
+      if (item.CategoryName === "None") {
+        array.splice(index, 1);
+        array.unshift(item);
+      }
+    });
+    setCategories(array);
+  }
 
   const setModal = (modalVisible) => {
     setModalVisible(modalVisible);
@@ -39,7 +40,6 @@ export default function AddNoteToCategoryScreen({ route, navigation }) {
       updateNoteCategories(
         route.params.selectedNotes,
         categoryName,
-        CurrentUser.prototype.getUser(),
         () => {
           navigation.navigate("HomeLoggedIn");
         }

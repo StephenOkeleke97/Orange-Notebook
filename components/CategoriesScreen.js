@@ -15,7 +15,6 @@ import { Icon } from "react-native-elements";
 import Category from "./Category.js";
 import { useFocusEffect } from "@react-navigation/native";
 import CreateCategory from "./CreateCategory.js";
-import CurrentUser from "../services/CurrentUser.js";
 import { deleteCategory, updateCategoryList } from "./queries.js";
 
 export default function CategoriesScreen({ navigation }) {
@@ -29,6 +28,30 @@ export default function CategoriesScreen({ navigation }) {
   const [selected, setSelected] = useState(false);
   const [triggerSelectAll, setTriggerSelectAll] = useState(false);
   const keyboardVerticalOffset = Platform.OS === "ios" ? 100 : 0;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      setSearchedText("");
+      updateCategoryList(updateCategoryListCallback);
+      setSelected(false);
+      setSelectMode(false);
+      setSelectedCategories([]);
+    }, [])
+  );
+
+  useEffect(() => {
+    updateCategoryList(updateCategoryListCallback);
+  }, [searchedText, modalVisible]);
+
+  const updateCategoryListCallback = (array) => {
+    setFilteredCategories(
+      array.filter((categories) =>
+        categories.CategoryName.toLowerCase().includes(
+          searchedText.toLowerCase()
+        )
+      )
+    );
+  }
 
   const addToSelectedCategories = (categoryName) => {
     selectedCategories.push(categoryName);
@@ -47,17 +70,8 @@ export default function CategoriesScreen({ navigation }) {
     if (selectedCategories.length > 0) {
       deleteCategory(
         selectedCategories,
-        CurrentUser.prototype.getUser(),
         () => {
-          updateCategoryList((array) => {
-            setFilteredCategories(
-              array.filter((categories) =>
-                categories.CategoryName.toLowerCase().includes(
-                  searchedText.toLowerCase()
-                )
-              )
-            );
-          }, CurrentUser.prototype.getUser());
+          updateCategoryList(updateCategoryListCallback);
         }
       );
     }
@@ -73,36 +87,6 @@ export default function CategoriesScreen({ navigation }) {
       setModalVisible(!modalVisible);
     }
   };
-
-  useFocusEffect(
-    React.useCallback(() => {
-      setSearchedText("");
-      updateCategoryList((array) => {
-        setFilteredCategories(
-          array.filter((categories) =>
-            categories.CategoryName.toLowerCase().includes(
-              searchedText.toLowerCase()
-            )
-          )
-        );
-      }, CurrentUser.prototype.getUser());
-      setSelected(false);
-      setSelectMode(false);
-      setSelectedCategories([]);
-    }, [])
-  );
-
-  useEffect(() => {
-    updateCategoryList((array) => {
-      setFilteredCategories(
-        array.filter((categories) =>
-          categories.CategoryName.toLowerCase().includes(
-            searchedText.toLowerCase()
-          )
-        )
-      );
-    }, CurrentUser.prototype.getUser());
-  }, [searchedText, modalVisible]);
 
   const setModal = (modalVisible) => {
     setModalVisible(modalVisible);

@@ -2,11 +2,11 @@ import * as SQLite from "expo-sqlite";
 
 const db = SQLite.openDatabase("notes.db");
 
-export function selectCategories(user, selectCategoriesCallback) {
+export function selectCategories(selectCategoriesCallback) {
   db.transaction((tx) => {
     tx.executeSql(
-      "SELECT CategoryName FROM Category C WHERE UserEmail = ?",
-      [user],
+      "SELECT CategoryName FROM Category C",
+      null,
       (t, { rows: { _array } }) => {
         selectCategoriesCallback(_array);
       },
@@ -17,7 +17,6 @@ export function selectCategories(user, selectCategoriesCallback) {
 
 export function createCategory(
   name,
-  user,
   red,
   green,
   blue,
@@ -25,9 +24,9 @@ export function createCategory(
 ) {
   db.transaction((tx) => {
     tx.executeSql(
-      "INSERT INTO Category(CategoryName, UserEmail, RedColor, GreenColor, BlueColor) VALUES (" +
-        "?, ?, ?, ?, ?)",
-      [name, user, red, green, blue],
+      "INSERT INTO Category(CategoryName, RedColor, GreenColor, BlueColor) VALUES (" +
+        "?, ?, ?, ?)",
+      [name, red, green, blue],
       (t, success) => {
         updateNotesCallBack();
       },
@@ -41,30 +40,29 @@ export function createCategory(
 export function updateNoteCategories(
   notes,
   categoryName,
-  user,
   navigationCallback
 ) {
-  notes.map((note, index, array) => {
+  notes.forEach((note, index, array) => {
     db.transaction((tx) => {
       tx.executeSql(
-        "UPDATE Notes SET CategoryName = ? WHERE NotesID = ? AND " +
-          "UserEmail = ?",
-        [categoryName, note, user],
-        null,
+        "UPDATE Notes SET CategoryName = ? WHERE NotesID = ?",
+        [categoryName, note],
+        (t, success) => {
+          if (index === array.length - 1) navigationCallback();
+        },
         (t, error) =>
           console.log("Error updating notes when change category:", error)
       );
-      if (index === array.length - 1) navigationCallback();
     });
   });
 }
 
-export function editCategory(name, red, green, blue, oldName, user) {
+export function editCategory(name, red, green, blue, oldName) {
   db.transaction((tx) => {
     tx.executeSql(
       "UPDATE Category SET CategoryName = ?, RedColor = ?, GreenColor = ?, BlueColor = ? " +
-        "WHERE CategoryName = ? AND UserEmail = ?",
-      [name, red, green, blue, oldName, user],
+        "WHERE CategoryName = ?",
+      [name, red, green, blue, oldName],
       null,
       (t, error) => {
         console.log("Error in edit category:", error);
@@ -75,15 +73,13 @@ export function editCategory(name, red, green, blue, oldName, user) {
 
 export function deleteCategory(
   selectedCategories,
-  user,
   deleteCategoryCallBack
 ) {
-  selectedCategories.map((categoryName) => {
+  selectedCategories.forEach((categoryName) => {
     db.transaction((tx) => {
       tx.executeSql(
-        'UPDATE Notes SET CategoryName = "None", Deleted = "true" WHERE CategoryName = ? ' +
-          "AND UserEmail = ?",
-        [categoryName, user],
+        'UPDATE Notes SET CategoryName = "None", Deleted = "true" WHERE CategoryName = ?',
+        [categoryName],
         null,
         (t, error) => {
           console.log(
@@ -93,8 +89,8 @@ export function deleteCategory(
         }
       );
       tx.executeSql(
-        "DELETE FROM Category WHERE CategoryName = ? AND UserEmail = ?",
-        [categoryName, user],
+        "DELETE FROM Category WHERE CategoryName = ?",
+        [categoryName],
         (t, success) => {
           deleteCategoryCallBack();
         },
@@ -106,14 +102,13 @@ export function deleteCategory(
   });
 }
 
-export function updateCategoryList(updateCallback, user) {
+export function updateCategoryList(updateCallback) {
   db.transaction((tx) => {
     tx.executeSql(
       "SELECT COUNT(NotesID) AS NumOfNotes, C.CategoryName, RedColor, GreenColor, BlueColor " +
         "FROM Category C LEFT JOIN Notes N on C.CategoryName = N.CategoryName " +
-        "AND C.UserEmail = N.UserEmail WHERE C.UserEmail = ? " +
         'GROUP BY C.CategoryName HAVING C.CategoryName != "None"',
-      [user],
+      null,
       (t, { rows: { _array } }) => {
         updateCallback(_array);
       },
@@ -137,7 +132,6 @@ export function editNote(titleText, labelText, contentText, date, id) {
 
 export function createNewNote(
   titleText,
-  user,
   category,
   labelText,
   contentText,
@@ -146,22 +140,22 @@ export function createNewNote(
 ) {
   db.transaction((tx) => {
     tx.executeSql(
-      "INSERT INTO Notes(Title, UserEmail, CategoryName, Label, Content, DateAdded, TimeStamp, Deleted, Pinned, Synced) VALUES (" +
-        '?, ?, ?, ?, ?, ?, ?, "false", "false", "false")',
-      [titleText, user, category, labelText, contentText, date, time],
+      "INSERT INTO Notes(Title, CategoryName, Label, Content, DateAdded, TimeStamp, Deleted, Pinned, Synced) VALUES (" +
+        '?, ?, ?, ?, ?, ?, "false", "false", "false")',
+      [titleText, category, labelText, contentText, date, time],
       null,
       (t, error) => console.log("Error in create note:", error)
     );
   });
 }
 
-export function selectAllNotes(deleted, pinned, user, allNoteCallback) {
+export function selectAllNotes(deleted, pinned, allNoteCallback) {
   db.transaction((tx) => {
     tx.executeSql(
       "SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor " +
         "FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName  " +
-        "AND N.UserEmail = C.UserEmail WHERE Deleted = ? AND Pinned = ? AND N.UserEmail = ? ORDER BY TimeStamp DESC",
-      [deleted, pinned, user],
+        "WHERE Deleted = ? AND Pinned = ? ORDER BY TimeStamp DESC",
+      [deleted, pinned],
       (t, { rows: { _array } }) => {
         allNoteCallback(_array);
       },
@@ -173,15 +167,14 @@ export function selectAllNotes(deleted, pinned, user, allNoteCallback) {
 export function selectNotesOfCategory(
   pinned,
   category,
-  user,
   noteCategoryCallback
 ) {
   db.transaction((tx) => {
     tx.executeSql(
       "SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor " +
-        "FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName AND N.UserEmail = C.UserEmail " +
-        'WHERE Deleted = "false" AND Pinned = ? AND N.CategoryName = ? AND N.UserEmail = ? ORDER BY TimeStamp DESC',
-      [pinned, category, user],
+        "FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName " +
+        'WHERE Deleted = "false" AND Pinned = ? AND N.CategoryName = ? ORDER BY TimeStamp DESC',
+      [pinned, category],
       (t, { rows: { _array } }) => {
         noteCategoryCallback(_array);
       },
@@ -191,7 +184,7 @@ export function selectNotesOfCategory(
 }
 
 export function deleteNotes(selectedNotes) {
-  selectedNotes.map((noteID) => {
+  selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
       tx.executeSql(
         'UPDATE Notes SET Deleted = "true", CategoryName =' +
@@ -205,7 +198,7 @@ export function deleteNotes(selectedNotes) {
 }
 
 export function restoreDeletedNotes(selectedNotes) {
-  selectedNotes.map((noteID) => {
+  selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
       tx.executeSql(
         'UPDATE Notes SET Deleted = "false" WHERE NotesID = ?',
@@ -218,7 +211,7 @@ export function restoreDeletedNotes(selectedNotes) {
 }
 
 export function pinNotes(selectedNotes, pinned) {
-  selectedNotes.map((noteID) => {
+  selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
       tx.executeSql(
         "UPDATE Notes SET Pinned = ? WHERE NotesID = ?",
@@ -231,7 +224,7 @@ export function pinNotes(selectedNotes, pinned) {
 }
 
 export function permanentDelete(selectedNotes) {
-  selectedNotes.map((noteID) => {
+  selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
       tx.executeSql(
         "DELETE FROM Notes WHERE NotesID = ?",

@@ -1,5 +1,5 @@
 import * as SQLite from "expo-sqlite";
-import CurrentUser from "../services/CurrentUser";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const db = SQLite.openDatabase("notes.db");
 
@@ -10,16 +10,11 @@ var twoFactor;
 export function getDetailedDisplay(setDetailEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
-      'SELECT SettingEnabled FROM UserSettings WHERE SettingName = "DetailedView" AND UserEmail = ?',
-      [CurrentUser.prototype.getUser()],
+      'SELECT SettingEnabled FROM Settings WHERE SettingName = "DetailedView"',
+      null,
       (t, { rows: { _array } }) => {
-        if (_array[0].SettingEnabled === "1.0") {
-          detailedDisplay = true;
-          setDetailEnabledCallBack(true);
-        } else {
-          detailedDisplay = false;
-          setDetailEnabledCallBack(false);
-        }
+        detailedDisplay = _array[0].SettingEnabled === 1;
+        setDetailEnabledCallBack(detailedDisplay);
       },
       (t, error) => console.log(error)
     );
@@ -29,8 +24,8 @@ export function getDetailedDisplay(setDetailEnabledCallBack) {
 export function toggleDetailedDisplay(setDetailEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
-      'UPDATE UserSettings SET SettingEnabled = ? WHERE SettingName = "DetailedView" AND UserEmail = ?',
-      [!detailedDisplay, CurrentUser.prototype.getUser()],
+      'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "DetailedView"',
+      [!detailedDisplay],
       () => {
         setDetailEnabledCallBack(!detailedDisplay);
       },
@@ -42,11 +37,11 @@ export function toggleDetailedDisplay(setDetailEnabledCallBack) {
 export function getBackupEnabled(setBackupEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
-      'SELECT SettingEnabled FROM UserSettings WHERE SettingName = "BackupEnabled" AND UserEmail = ?',
-      [CurrentUser.prototype.getUser()],
+      'SELECT SettingEnabled FROM Settings WHERE SettingName = "BackupEnabled"',
+      null,
       (t, { rows: { _array } }) => {
-        backupEnabled = _array[0].SettingEnabled === "1.0";
-        setBackupEnabledCallBack(_array[0].SettingEnabled === "1.0");
+        backupEnabled = _array[0].SettingEnabled === 1;
+        setBackupEnabledCallBack(backupEnabled);
       },
       (t, error) => console.log(error)
     );
@@ -56,8 +51,8 @@ export function getBackupEnabled(setBackupEnabledCallBack) {
 export function toggleBackupEnabled(setBackupEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
-      'UPDATE UserSettings SET SettingEnabled = ? WHERE SettingName = "BackupEnabled" AND UserEmail = ?',
-      [!backupEnabled, CurrentUser.prototype.getUser()],
+      'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "BackupEnabled"',
+      [!backupEnabled],
       () => {
         setBackupEnabledCallBack(!backupEnabled);
       },
@@ -69,16 +64,11 @@ export function toggleBackupEnabled(setBackupEnabledCallBack) {
 export function getTwoFactor(setTwoFactorCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
-      'SELECT SettingEnabled FROM UserSettings WHERE SettingName = "TwoFactor" AND UserEmail = ?',
-      [CurrentUser.prototype.getUser()],
+      'SELECT SettingEnabled FROM Settings WHERE SettingName = "TwoFactor"',
+      null,
       (t, { rows: { _array } }) => {
-        if (_array[0].SettingEnabled === "1.0") {
-          twoFactor = true;
-          setTwoFactorCallBack(true);
-        } else {
-          twoFactor = false;
-          setTwoFactorCallBack(false);
-        }
+        twoFactor = _array[0].SettingEnabled === 1;
+        setTwoFactorCallBack(twoFactor);
       },
       (t, error) => console.log(error)
     );
@@ -86,26 +76,28 @@ export function getTwoFactor(setTwoFactorCallBack) {
 }
 
 export function toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack) {
-  unSyncWhenUpdateLocally();
-  db.transaction((tx) => {
-    tx.executeSql(
-      'UPDATE UserSettings SET SettingEnabled = ? WHERE SettingName = "TwoFactor" AND UserEmail = ?',
-      [!twoFactor, CurrentUser.prototype.getUser()],
-      () => {
-        setTwoFactorCallBack(!twoFactor);
-        syncWithServerCallBack(!twoFactor);
-      },
-      (t, error) => console.log(error)
-    );
+  unSyncWhenUpdateLocally(() => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "TwoFactor"',
+        [!twoFactor],
+        () => {
+          setTwoFactorCallBack(!twoFactor);
+          syncWithServerCallBack(!twoFactor);
+        },
+        (t, error) => console.log(error)
+      );
+    });
   });
 }
 
-function unSyncWhenUpdateLocally() {
+function unSyncWhenUpdateLocally(toggleTwoFactorCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
-      'UPDATE UserSettings SET SettingSynced = "0.0" WHERE UserEmail = ?',
-      [CurrentUser.prototype.getUser()],
+      'UPDATE Settings SET SettingSynced = "0.0" ' +
+        'AND SettingName = "TwoFactor"',
       null,
+      (t, success) => toggleTwoFactorCallBack(),
       (t, error) => console.log(error)
     );
   });
@@ -114,165 +106,151 @@ function unSyncWhenUpdateLocally() {
 export function syncWithLocalDB() {
   db.transaction((tx) => {
     tx.executeSql(
-      'UPDATE UserSettings SET SettingSynced = "1.0" WHERE UserEmail = ?',
-      [CurrentUser.prototype.getUser()],
+      'UPDATE Settings SET SettingSynced = "1.0"',
+      null,
       null,
       (t, error) => console.log(error)
     );
   });
 }
 
-export function getSyncStatus(callback) {
+export function getSyncStatus(success) {
   db.transaction((tx) => {
     tx.executeSql(
-      "SELECT SettingSynced FROM UserSettings WHERE UserEmail = ?",
-      [CurrentUser.prototype.getUser()],
+      "SELECT SettingSynced FROM Settings WHERE SettingName = 'TwoFactor'",
+      null,
       (t, { rows: { _array } }) => {
-        callback(_array[0].SettingSynced);
+        success(_array[0].SettingSynced);
       },
-      (t, error) => console.log(error)
-    );
-  });
-}
-
-export function initializeSettings() {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) " +
-        ' VALUES (?, "DetailedView", "1.0", "0.0")',
-      [CurrentUser.prototype.getUser()],
-      null,
-      (t, error) => console.log(error)
-    );
-
-    tx.executeSql(
-      "INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) " +
-        ' VALUES (?, "BackupEnabled", "0.0", "0.0")',
-      [CurrentUser.prototype.getUser()],
-      null,
-      (t, error) => console.log(error)
-    );
-
-    tx.executeSql(
-      "INSERT OR IGNORE INTO UserSettings(UserEmail, SettingName, SettingEnabled, SettingSynced) " +
-        ' VALUES (?, "TwoFactor", "0.0", "0.0")',
-      [CurrentUser.prototype.getUser()],
-      null,
       (t, error) => console.log(error)
     );
   });
 }
 
 export function setBackupFrequency(frequency, callback) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE Users SET BackupFrequency = ? WHERE UserEmail = ?",
-      [frequency, CurrentUser.prototype.getUser()],
-      () => callback(),
-      (t, error) => console.log(error)
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "UPDATE Users SET BackupFrequency = ? WHERE UserEmail = ?",
+        [frequency, user],
+        () => callback(),
+        (t, error) => console.log(error)
+      );
+    });
   });
 }
 
 export function getBackupFrequency(callback) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "SELECT BackupFrequency FROM Users WHERE UserEmail = ?",
-      [CurrentUser.prototype.getUser()],
-      (t, { rows: { _array } }) => callback(_array[0].BackupFrequency),
-      (t, error) => console.log(error)
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "SELECT BackupFrequency FROM Users WHERE UserEmail = ?",
+        [user],
+        (t, { rows: { _array } }) => callback(_array[0].BackupFrequency),
+        (t, error) => console.log(error)
+      );
+    });
   });
 }
 
 export function setLastBackupDate(date) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE Users SET BackupDate = ? WHERE UserEmail = ?",
-      [date, CurrentUser.prototype.getUser()],
-      null,
-      (error) => console.log(error)
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "UPDATE Users SET BackupDate = ? WHERE UserEmail = ?",
+        [date, user],
+        null,
+        (error) => console.log(error)
+      );
+    });
   });
 }
 
 export function getLastBackUpDate(callback) {
-  db.transaction((tx) => [
-    tx.executeSql(
-      "SELECT BackupDate FROM Users WHERE UserEmail = ?",
-      [CurrentUser.prototype.getUser()],
-      (t, { rows: { _array } }) => {
-        callback(_array[0].BackupDate);
-      }
-    ),
-  ]);
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "SELECT BackupDate FROM Users WHERE UserEmail = ?",
+        [user],
+        (t, { rows: { _array } }) => {
+          callback(_array[0].BackupDate);
+        }
+      );
+    });
+  });
 }
 
 export function setLastBackupSize(size) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE Users SET BackupSize = ? WHERE UserEmail = ?",
-      [size, CurrentUser.prototype.getUser()],
-      null,
-      (error) => console.log(error)
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "UPDATE Users SET BackupSize = ? WHERE UserEmail = ?",
+        [size, user],
+        null,
+        (error) => console.log(error)
+      );
+    });
   });
 }
 
 export function getLastBackUpSize(callback) {
-  db.transaction((tx) => [
-    tx.executeSql(
-      "SELECT BackupSize FROM Users WHERE UserEmail = ?",
-      [CurrentUser.prototype.getUser()],
-      (t, { rows: { _array } }) => {
-        callback(_array[0].BackupSize);
-      }
-    ),
-  ]);
-}
-
-export function deleteUser(callback) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "DELETE FROM Users WHERE UserEmail = ?",
-      [CurrentUser.prototype.getUser()],
-      () => {
-        callback();
-      },
-      (t, error) => {
-        console.log(error);
-      }
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "SELECT BackupSize FROM Users WHERE UserEmail = ?",
+        [user],
+        (t, { rows: { _array } }) => {
+          callback(_array[0].BackupSize);
+        }
+      );
+    });
   });
 }
 
+//*
+export function deleteUser(callback) {
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "DELETE FROM Users WHERE UserEmail = ?",
+        [user],
+        () => {
+          callback();
+        },
+        (t, error) => {
+          console.log(error);
+        }
+      );
+    });
+  });
+}
+
+//*
 export function logOut(callback) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE Users SET LoggedIn = 0 WHERE UserEmail = ?",
-      [CurrentUser.prototype.getUser()],
-      () => {
-        callback();
-      },
-      (t, error) => console.log(error)
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "UPDATE Users SET LoggedIn = 0 WHERE UserEmail = ?",
+        [user],
+        () => {
+          callback();
+        },
+        (t, error) => console.log(error)
+      );
+    });
   });
 }
 
 export function checkIfLoggedIn(callback) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "SELECT UserEmail FROM Users WHERE LoggedIn = 1",
-      null,
-      (t, { rows: { _array } }) => {
-        if (_array.length > 0) {
-          callback(true, _array[0].UserEmail);
-        }
-      }
-    );
+  db.transaction(tx => {
+    tx.executeSql("SELECT UserEmail from Users Limit 1", null, 
+    (t, {rows: { _array }}) => {
+      callback(_array.length > 0);
+    }, (t, error) => console.log("Error during check logged in", error));
   });
 }
 
+//*
 export function saveLogIn(email) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -285,25 +263,39 @@ export function saveLogIn(email) {
 }
 
 export function getNextBackUpDate(callback) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "SELECT NextBackUpDate FROM Users WHERE UserEmail = ?",
-      [CurrentUser.prototype.getUser()],
-      (t, { rows: { _array } }) => {
-        callback(_array[0].NextBackUpDate);
-      },
-      (t, error) => console.log(error)
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "SELECT NextBackUpDate FROM Users WHERE UserEmail = ?",
+        [user],
+        (t, { rows: { _array } }) => {
+          callback(_array[0].NextBackUpDate);
+        },
+        (t, error) => console.log(error)
+      );
+    });
   });
 }
 
 export function updateNextBackUpDate(dateInEpoch) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "UPDATE Users SET NextBackUpDate = ? WHERE UserEmail = ?",
-      [dateInEpoch, CurrentUser.prototype.getUser()],
-      null,
-      (t, error) => console.log(error)
-    );
+  getUser().then((user) => {
+    db.transaction((tx) => {
+      tx.executeSql(
+        "UPDATE Users SET NextBackUpDate = ? WHERE UserEmail = ?",
+        [dateInEpoch, user],
+        null,
+        (t, error) => console.log(error)
+      );
+    });
   });
+}
+
+async function getUser() {
+  let user;
+  try {
+    user = await AsyncStorage.getItem("email");
+  } catch (err) {
+    console.log(err);
+  }
+  return user;
 }

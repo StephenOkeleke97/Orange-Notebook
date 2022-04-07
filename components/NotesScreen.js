@@ -16,7 +16,6 @@ import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
 import { getDetailedDisplay } from "./settings.js";
 import NoteCardSlim from "./NoteCardSlim.js";
-import CurrentUser from "../services/CurrentUser.js";
 import {
   deleteNotes,
   pinNotes,
@@ -36,78 +35,6 @@ export default function NotesScreen({ navigation, route }) {
   const [detailedView, setDetailedView] = useState(false);
   const keyboardVerticalOffset = Platform.OS === "ios" ? 60 : 0;
 
-  const getNotes = () => {
-    if (notesTabActive) {
-      route.params === undefined
-        ? //select all unpinned
-          selectAllNotes(
-            "false",
-            "false",
-            CurrentUser.prototype.getUser(),
-            (array) => {
-              setFilteredNotes(
-                array.filter((note) =>
-                  note.Content.toLowerCase().includes(
-                    searchedText.toLowerCase()
-                  )
-                )
-              );
-            }
-          )
-        : //select certain category unpinned
-          selectNotesOfCategory(
-            "false",
-            route.params.category,
-            CurrentUser.prototype.getUser(),
-            (array) => {
-              setFilteredNotes(
-                array.filter((note) =>
-                  note.Content.toLowerCase().includes(
-                    searchedText.toLowerCase()
-                  )
-                )
-              );
-            }
-          );
-    } else {
-      route.params === undefined
-        ? //select all pinned
-          selectAllNotes(
-            "false",
-            "true",
-            CurrentUser.prototype.getUser(),
-            (array) => {
-              setFilteredNotes(
-                array.filter((note) =>
-                  note.Content.toLowerCase().includes(
-                    searchedText.toLowerCase()
-                  )
-                )
-              );
-            }
-          )
-        : //select certain category pinned
-          selectNotesOfCategory(
-            "true",
-            route.params.category,
-            CurrentUser.prototype.getUser(),
-            (array) => {
-              setFilteredNotes(
-                array.filter((note) =>
-                  note.Content.toLowerCase().includes(
-                    searchedText.toLowerCase()
-                  )
-                )
-              );
-            }
-          );
-    }
-  };
-
-  const setDetailedViewCallBack = (bool) => {
-    setDetailedView(bool);
-  };
-
   useFocusEffect(
     React.useCallback(() => {
       setSearchedText("");
@@ -121,6 +48,50 @@ export default function NotesScreen({ navigation, route }) {
   useEffect(() => {
     getNotes();
   }, [searchedText, notesTabActive]);
+
+  const getNotes = () => {
+    if (notesTabActive) {
+      route.params === undefined
+        ? //select all unpinned
+          getAllUnpinnedNotes()
+        : //select certain category unpinned
+          getUnpinnedNotesOfCategory();
+    } else {
+      route.params === undefined
+        ? //select all pinned
+          getAllPinnedNotes()
+        : //select certain category pinned
+          getPinnedNotesOfCategory();
+    }
+  };
+
+  const getAllUnpinnedNotes = () => {
+    selectAllNotes("false", "false", getNotesCallback);
+  };
+
+  const getAllPinnedNotes = () => {
+    selectAllNotes("false", "true", getNotesCallback);
+  };
+
+  const getUnpinnedNotesOfCategory = () => {
+    selectNotesOfCategory("false", route.params.category, getNotesCallback);
+  };
+
+  const getPinnedNotesOfCategory = () => {
+    selectNotesOfCategory("true", route.params.category, getNotesCallback);
+  };
+
+  const getNotesCallback = (array) => {
+    setFilteredNotes(
+      array.filter((note) =>
+        note.Content.toLowerCase().includes(searchedText.toLowerCase())
+      )
+    );
+  };
+
+  const setDetailedViewCallBack = (bool) => {
+    setDetailedView(bool);
+  };
 
   const addToSelectedNotes = (noteID) => {
     selectedNotes.push(noteID);

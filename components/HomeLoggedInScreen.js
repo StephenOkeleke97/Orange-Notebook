@@ -8,20 +8,18 @@ import {
   getBackupEnabled,
   getBackupFrequency,
   getNextBackUpDate,
-  getSyncStatus,
-  syncWithLocalDB,
   updateNextBackUpDate,
   setLastBackupDate,
   setLastBackupSize,
 } from "./settings";
 import UserService from "../services/UserService";
 import { useEffect, useState } from "react";
-import CurrentUser from "../services/CurrentUser";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 const Tab = createBottomTabNavigator();
 
 export default function HomeLoggedInScreen() {
-  const [backupFrequencyLabel, setBackupFrequencyLabel] = useState("Daily");
-  const [backupEnabled, setBackupEnabled] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   const backupFrequency = {
     Daily: 86400000,
@@ -30,39 +28,37 @@ export default function HomeLoggedInScreen() {
   };
 
   useEffect(() => {
-    getSyncStatus((synced) => {
-      if (synced === "0.0")
-        UserService.enableTwoFactor(
-          CurrentUser.prototype.getUser(),
-          synced === "1.0",
-          syncWithLocalDB
-        );
+    getUser().then((user) => {
+      setUserEmail(user);
     });
+  }, [userEmail]);
 
-    UserService.getLastBackUpInfo(updateLocalBackUpInfo);
-  }, []);
+  useEffect(() => {
+    if (userEmail)
+      UserService.getLastBackUpInfo(userEmail, updateLocalBackUpInfo);
+  }, [userEmail]);
 
   useEffect(() => {
     getBackupEnabled((enabled) => {
-      setBackupEnabled(enabled);
-    });
-    getBackupFrequency((frequency) => setBackupFrequencyLabel(frequency));
-    getNextBackUpDate((date) => {
-      let d = new Date().getTime();
-      if (backupEnabled && d >= date) {
-        UserService.backUp(
-          () => {},
-          () => {},
-          true,
-          handleSuccesfulBackUp
-        );
-      }
+      getNextBackUpDate((date) => {
+        let d = new Date().getTime();
+        if (enabled && d >= date) {
+          UserService.backUp(
+            () => {},
+            () => {},
+            true,
+            handleSuccesfulBackUp
+          );
+        }
+      });
     });
   });
 
   const handleSuccesfulBackUp = () => {
-    let d = new Date().getTime();
-    updateNextBackUpDate(d + backupFrequency[backupFrequencyLabel]);
+    getBackupFrequency((frequency) => {
+      let d = new Date().getTime();
+      updateNextBackUpDate(d + backupFrequency[frequency]);
+    });
   };
 
   const updateLocalBackUpInfo = (dateAndSizeList) => {
@@ -70,6 +66,16 @@ export default function HomeLoggedInScreen() {
     let size = dateAndSizeList[1];
     setLastBackupDate(date);
     setLastBackupSize(size);
+  };
+
+  const getUser = async () => {
+    let user;
+    try {
+      user = await AsyncStorage.getItem("email");
+    } catch (error) {
+      console.log(error);
+    }
+    return user;
   };
 
   return (
