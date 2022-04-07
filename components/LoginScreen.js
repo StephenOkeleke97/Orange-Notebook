@@ -12,8 +12,7 @@ import { useFonts } from "expo-font";
 import { globalStyles } from "../styles/global.js";
 import { HideKeyboard } from "./HideKeyboard.js";
 import UserService from "../services/UserService.js";
-import CurrentUser from "../services/CurrentUser.js";
-import { initializeSettings, saveLogIn } from "./settings.js";
+import { setUser } from "../services/CurrentUser.js";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -40,13 +39,14 @@ export default function LoginScreen({ navigation }) {
           email: email,
         });
       } else {
-        CurrentUser.prototype.setUser(email);
-        initializeSettings();
-        saveLogIn(email);
-        navigation.navigate("HomeLoggedIn");
+        setUser(email, onSetUser);
       }
     });
   };
+
+  const onSetUser = () => {
+    navigation.navigate("HomeLoggedIn");
+  }
 
   const handleResetPassword = () => {
     navigation.navigate("ResetPassword");

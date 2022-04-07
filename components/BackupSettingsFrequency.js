@@ -48,7 +48,7 @@ const BackupSettingsFrequency = ({ navigation }) => {
   const handleBack = () => {
     navigation.navigate("Backup");
   };
-  
+
   return (
     <View style={globalStyles.container}>
       <View style={styles.container}>

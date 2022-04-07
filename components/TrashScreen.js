@@ -5,7 +5,6 @@ import { useFocusEffect } from "@react-navigation/native";
 import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
 import NoteCardSlim from "./NoteCardSlim.js";
-import CurrentUser from "../services/CurrentUser.js";
 import {
   permanentDelete,
   restoreDeletedNotes,
@@ -24,37 +23,23 @@ export default function TrashScreen() {
   useFocusEffect(
     React.useCallback(() => {
       setSearchedText("");
-      selectAllNotes(
-        "true",
-        "false",
-        CurrentUser.prototype.getUser(),
-        (array) => {
-          setFilteredNotes(
-            array.filter((note) =>
-              note.Content.toLowerCase().includes(searchedText.toLowerCase())
-            )
-          );
-        }
-      );
+      selectAllNotes("true", "false", onSelectAllNotes);
       setSelectMode(false);
       setSelected(false);
     }, [])
   );
 
   useEffect(() => {
-    selectAllNotes(
-      "true",
-      "false",
-      CurrentUser.prototype.getUser(),
-      (array) => {
-        setFilteredNotes(
-          array.filter((note) =>
-            note.Content.toLowerCase().includes(searchedText.toLowerCase())
-          )
-        );
-      }
-    );
+    selectAllNotes("true", "false", onSelectAllNotes);
   }, [searchedText]);
+
+  const onSelectAllNotes = (array) => {
+    setFilteredNotes(
+      array.filter((note) =>
+        note.Content.toLowerCase().includes(searchedText.toLowerCase())
+      )
+    );
+  }
 
   const getSelectMode = () => {
     return selectMode;
@@ -81,19 +66,7 @@ export default function TrashScreen() {
   const deleteSelectedNotes = () => {
     if (selectedNotes.length > 0) {
       permanentDelete(selectedNotes);
-
-      selectAllNotes(
-        "true",
-        "false",
-        CurrentUser.prototype.getUser(),
-        (array) => {
-          setFilteredNotes(
-            array.filter((note) =>
-              note.Content.toLowerCase().includes(searchedText.toLowerCase())
-            )
-          );
-        }
-      );
+      selectAllNotes("true", "false", onSelectAllNotes);
     }
     setSelectMode(!selectMode);
   };
@@ -101,19 +74,7 @@ export default function TrashScreen() {
   const restoreSelectedNotes = () => {
     if (selectedNotes.length > 0) {
       restoreDeletedNotes(selectedNotes);
-
-      selectAllNotes(
-        "true",
-        "false",
-        CurrentUser.prototype.getUser(),
-        (array) => {
-          setFilteredNotes(
-            array.filter((note) =>
-              note.Content.toLowerCase().includes(searchedText.toLowerCase())
-            )
-          );
-        }
-      );
+      selectAllNotes("true", "false", onSelectAllNotes);
     }
     setSelectMode(!selectMode);
   };

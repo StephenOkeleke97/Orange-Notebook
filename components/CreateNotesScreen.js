@@ -10,7 +10,6 @@ import {
 import { useState } from "react";
 import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
-import CurrentUser from "../services/CurrentUser.js";
 import { createNewNote, editNote } from "./queries.js";
 
 export default function CreateNotesScreen({ navigation, route }) {
@@ -27,7 +26,6 @@ export default function CreateNotesScreen({ navigation, route }) {
     } else {
       createNewNote(
         titleText,
-        CurrentUser.prototype.getUser(),
         route.params.category,
         labelText,
         contentText,

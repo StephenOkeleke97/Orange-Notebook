@@ -1,34 +1,30 @@
 import * as SQLite from "expo-sqlite";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const db = SQLite.openDatabase("notes.db");
 
-export default class CurrentUser {
-  currentUser = "";
+export function setUser(email, success) {
+  addUserEmailToAsyncStorage(email);
+  db.transaction((tx) => {
+    tx.executeSql(
+      "INSERT OR IGNORE INTO Users(UserEmail, BackupFrequency, " +
+        'NextBackUpDate) VALUES (?, "Daily", 0)',
+      [email],
+      (t, res) => {
+        console.log("h");
+        success();
+      },
+      (t, error) => {
+        console.log(error);
+      }
+    );
+  });
+}
 
-  setUser(email) {
-    this.currentUser = email;
-
-    db.transaction((tx) => {
-      tx.executeSql(
-        "INSERT OR IGNORE INTO Users(UserEmail, BackupFrequency, " +
-          'LoggedIn, NextBackUpDate) VALUES (?, "Daily", 1, 0)',
-        [email],
-        null,
-        (t, error) => {
-          console.log(error);
-        }
-      );
-
-      tx.executeSql(
-        'INSERT OR IGNORE INTO Category VALUES ("None", ?, 209, 211, 212)',
-        [email],
-        null,
-        (t, error) => console.log(error)
-      );
-    });
-  }
-
-  getUser() {
-    return this.currentUser;
+async function addUserEmailToAsyncStorage(email) {
+  try {
+    await AsyncStorage.setItem("email", email);
+  } catch (error) {
+    console.log(error);
   }
 }

@@ -3,8 +3,7 @@ import { globalStyles } from "../styles/global";
 import { Icon } from "react-native-elements";
 import { useState } from "react";
 import UserService from "../services/UserService";
-import CurrentUser from "../services/CurrentUser";
-import { initializeSettings, saveLogIn } from "./settings";
+import { setUser } from "../services/CurrentUser";
 
 export default function VerifyEmailScreen({ navigation, route }) {
   const { email } = route.params;
@@ -75,12 +74,13 @@ export default function VerifyEmailScreen({ navigation, route }) {
         email: email,
       });
     } else {
-      CurrentUser.prototype.setUser(email);
-      initializeSettings();
-      saveLogIn(email);
-      navigation.navigate("HomeLoggedIn");
+      setUser(email, onSetUser);
     }
   };
+
+  const onSetUser = () => {
+    navigation.navigate("HomeLoggedIn");
+  }
 
   return (
     <View style={styles.container}>

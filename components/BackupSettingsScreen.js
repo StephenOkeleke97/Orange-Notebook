@@ -22,6 +22,7 @@ import { Icon } from "react-native-elements";
 import { globalStyles } from "../styles/global";
 import { getBackupEnabled, toggleBackupEnabled } from "./settings.js";
 import UserService from "../services/UserService.js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BackupSettingsScreen = ({ navigation }) => {
   const [rotateAnimation, setRotateAnimation] = useState(new Animated.Value(0));
@@ -31,8 +32,15 @@ const BackupSettingsScreen = ({ navigation }) => {
   const [lastSize, setLastSize] = useState(0);
   const [progressPercent, setProgressPercent] = useState(0 + " %");
   const [backupEnabled, setBackupEnabled] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   const backupFrequencyActiveOpacity = backupEnabled ? 0.3 : 1;
+
+  useEffect(() => {
+    getUser().then((user) => {
+      setUserEmail(user);
+    });
+  }, [userEmail]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -54,6 +62,16 @@ const BackupSettingsScreen = ({ navigation }) => {
     if (backupInProgress) startImageRotateFunction();
     else rotateAnimation.stopAnimation();
   }, [backupInProgress]);
+
+  const getUser = async () => {
+    let user;
+    try {
+      user = await AsyncStorage.getItem("email");
+    } catch (error) {
+      console.log(error);
+    }
+    return user;
+  };
 
   const setBackupEnabledCallBack = (bool) => {
     setBackupEnabled(bool);
@@ -84,7 +102,11 @@ const BackupSettingsScreen = ({ navigation }) => {
         {
           text: "Back Up",
           onPress: () => {
-            UserService.backUp(setProgressActiveCallBack, setProgressCallBack);
+            UserService.backUp(
+              userEmail,
+              setProgressActiveCallBack,
+              setProgressCallBack
+            );
           },
         },
       ]
@@ -110,6 +132,7 @@ const BackupSettingsScreen = ({ navigation }) => {
           text: "Restore",
           onPress: () => {
             UserService.restoreBackup(
+              userEmail,
               setProgressActiveCallBack,
               setProgressCallBack,
               updateLastDateAndSize,
@@ -137,6 +160,7 @@ const BackupSettingsScreen = ({ navigation }) => {
           style: "destructive",
           onPress: () => {
             UserService.deleteBackup(
+              userEmail,
               setProgressActiveCallBack,
               setProgressCallBack
             );

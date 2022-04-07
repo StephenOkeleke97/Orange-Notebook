@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -14,17 +14,19 @@ import {
   toggleDetailedDisplay,
   getTwoFactor,
   toggleTwoFactor,
-  syncWithLocalDB,
   deleteUser,
   logOut,
 } from "./settings.js";
 import { useFocusEffect } from "@react-navigation/native";
 import UserService from "../services/UserService.js";
-import CurrentUser from "../services/CurrentUser";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {useNetInfo} from "@react-native-community/netinfo";
 
 export default function SettingsScreen({ navigation }) {
+  const netInfo = useNetInfo();
   const [isDetailedEnabled, setIsDetailedEnabled] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
 
   useFocusEffect(
     React.useCallback(() => {
@@ -32,6 +34,22 @@ export default function SettingsScreen({ navigation }) {
       getTwoFactor(setTwoFactorCallBack);
     })
   );
+
+  useEffect(() => {
+    getUser().then(user => {
+      setUserEmail(user);
+    })
+  }, [userEmail]);
+
+  const getUser = async () => {
+    let user;
+    try {
+      user = await AsyncStorage.getItem("email");
+    } catch (error) {
+      console.log(error);
+    }
+    return user;
+  }
 
   const setDetailEnabledCallBack = (bool) => {
     setIsDetailedEnabled(bool);
@@ -50,16 +68,28 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const toggleTwoFactorEnabled = () => {
-    toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack);
+    if (netInfo.isConnected)
+      toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack);
+    else (Alert.alert("No Internet", 
+    "Internet connectivity is required to perform this action"));
   };
 
   const syncWithServerCallBack = (bool) => {
     UserService.enableTwoFactor(
-      CurrentUser.prototype.getUser(),
+      userEmail,
       bool,
-      syncWithLocalDB
+      enableTwoFactorError
     );
   };
+
+  const enableTwoFactorError = () => {
+    const action = twoFactor ? "Disable" : "Enable"
+    Alert.alert(`Failed to ${action} 2FA`,
+    "Something went wrong. Please try again later");
+    //Revert
+    toggleTwoFactor(setTwoFactorCallBack, () => {});
+
+  }
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -77,7 +107,7 @@ export default function SettingsScreen({ navigation }) {
           style: "destructive",
           onPress: () => {
             UserService.delete(
-              CurrentUser.prototype.getUser(),
+              userEmail,
               handleDeleteFromLocalAndLogOut
             );
           },
