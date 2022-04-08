@@ -213,7 +213,13 @@ export function deleteUser(success) {
   FileSystem.deleteAsync(FileSystem.documentDirectory + "SQLite/notes.db")
     .then(() => {
       initializeDB();
-      success();
+      AsyncStorage.clear()
+      .then(() => {
+        success();
+      })
+      .catch(error => {
+        console.log(error);
+      })
     })
     .catch((error) => {
       console.log(error);
@@ -240,7 +246,9 @@ export function getNextBackUpDate(callback) {
         "SELECT NextBackUpDate FROM Users WHERE UserEmail = ?",
         [user],
         (t, { rows: { _array } }) => {
-          callback(_array[0].NextBackUpDate);
+          if (_array[0]) {
+            callback(_array[0].NextBackUpDate);
+          }
         },
         (t, error) => console.log(error)
       );

@@ -14,6 +14,7 @@ import {
 } from "./settings";
 import UserService from "../services/UserService";
 import { useEffect, useState } from "react";
+import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Tab = createBottomTabNavigator();
@@ -38,20 +39,31 @@ export default function HomeLoggedInScreen() {
   }, [userEmail]);
 
   useEffect(() => {
-    getBackupEnabled((enabled) => {
-      getNextBackUpDate((date) => {
-        let d = new Date().getTime();
-        if (enabled && d >= date) {
-          UserService.backUp(
-            () => {},
-            () => {},
-            true,
-            handleSuccesfulBackUp
-          );
-        }
-      });
+    const subscription = AppState.addEventListener("change", state => {
+      if (state === "active") {
+        getBackupEnabled((enabled) => {
+          getNextBackUpDate((date) => {
+            let d = new Date().getTime();
+            if (enabled && d >= date) {
+              UserService.backUp(
+                userEmail,    
+                () => {},
+                () => {},
+                () => {},
+                true,
+                handleSuccesfulBackUp
+              );
+            }
+          });
+        });
+      }
     });
-  });
+
+    return () => {
+      if (subscription)
+        subscription.remove();
+    }
+  }, []);
 
   const handleSuccesfulBackUp = () => {
     getBackupFrequency((frequency) => {

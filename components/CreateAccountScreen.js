@@ -12,6 +12,7 @@ import { useFonts } from "expo-font";
 import { globalStyles } from "../styles/global.js";
 import { HideKeyboard } from "./HideKeyboard.js";
 import UserService from "../services/UserService.js";
+import Loading from "./Loading.js";
 
 export default function CreateAccountScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -19,18 +20,15 @@ export default function CreateAccountScreen({ navigation }) {
   const [emailIsError, setEmailIsError] = useState(false);
   const [passwordIsError, setPasswordIsError] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
   const verifyPassword =
     /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
   const validator = require("email-validator");
 
-  const [loaded] = useFonts({
+  useFonts({
     LatoRegular: require("../assets/fonts/Lato-Regular.ttf"),
     LatoBold: require("../assets/fonts/Lato-Bold.ttf"),
   });
-
-  if (!loaded) {
-    return null;
-  }
 
   const onSubmit = () => {
     if (!validator.validate(email.trim())) {
@@ -38,11 +36,13 @@ export default function CreateAccountScreen({ navigation }) {
     } else if (!verifyPassword.test(password)) {
       setPasswordIsError(true);
     } else {
+      setLoading(true);
       UserService.register(email.trim(), password, registerSuccessful, failure);
     }
   };
 
   const registerSuccessful = () => {
+    setLoading(false);
     navigation.navigate("VerifyEmail", {
       source: "Register",
       email: email.trim(),
@@ -52,6 +52,7 @@ export default function CreateAccountScreen({ navigation }) {
 
   const failure = (message = `Something went wrong. 
   Please try again later`) => {
+    setLoading(false);
     Alert.alert("Create Account Failed", message);
   }
 
@@ -139,6 +140,7 @@ export default function CreateAccountScreen({ navigation }) {
           </TouchableOpacity>
           <View style={styles.separator} />
         </View>
+        {loading && <Loading />}
       </View>
     </HideKeyboard>
   );

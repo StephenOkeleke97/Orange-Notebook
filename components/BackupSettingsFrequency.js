@@ -108,16 +108,6 @@ const BackupSettingsFrequency = ({ navigation }) => {
               <Icon name="check" type="feather" color="#5199FF" size={20} />
             )}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={[globalStyles.yellowButton, { marginBottom: 10 }]}
-            onPress={handleBack}
-          >
-            <Text>Save</Text>
-          </TouchableOpacity>
-          <Text style={styles.extraNoteText}>
-            Note: This action can also be saved by pressing the back button at
-            the top-left of the screen.
-          </Text>
         </View>
       </View>
     </View>
@@ -182,11 +172,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "400",
     color: "#000",
-  },
-
-  extraNoteText: {
-    color: "#BCBEC0",
-    fontSize: 13,
   },
 });
 

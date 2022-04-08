@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   Text,
   View,
@@ -35,6 +35,13 @@ const BackupSettingsScreen = ({ navigation }) => {
   const [userEmail, setUserEmail] = useState("");
 
   const backupFrequencyActiveOpacity = backupEnabled ? 0.3 : 1;
+  let isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     getUser().then((user) => {
@@ -82,7 +89,8 @@ const BackupSettingsScreen = ({ navigation }) => {
   };
 
   const updateProgress = (percent) => {
-    setProgressPercent(percent);
+    if (isMounted.current)
+      setProgressPercent(percent);
   };
 
   /**
@@ -154,7 +162,8 @@ const BackupSettingsScreen = ({ navigation }) => {
     Alert.alert(
       "Restore Backup",
       "Are you sure you want to restore backup? Completing this " +
-        "action will overwrite all notes on this device.",
+        "action will overwrite all notes on this device. This action will be " +
+        "completed in the background.",
       [
         {
           text: "Cancel",

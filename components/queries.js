@@ -245,3 +245,14 @@ export function permanentDelete(selectedNotes) {
     });
   });
 }
+
+export function setTwoFactor(isEnabled) {
+  db.transaction((tx) => {
+    tx.executeSql(
+      "UPDATE Settings Set SettingEnabled = ? WHERE SettingName = 'TwoFactor'",
+      [isEnabled],
+      null,
+      (t, error) => console.log("Error in permanent delete:", error)
+    );
+  });
+}

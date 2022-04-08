@@ -14,6 +14,7 @@ import { globalStyles } from "../styles/global.js";
 import { HideKeyboard } from "./HideKeyboard.js";
 import UserService from "../services/UserService.js";
 import { setUser } from "../services/CurrentUser.js";
+import Loading from "./Loading.js";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -22,15 +23,12 @@ export default function LoginScreen({ navigation }) {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [emailIsError, setEmailIsError] = useState(false);
   const [passwordIsError, setPasswordIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [loaded] = useFonts({
+  useFonts({
     LatoRegular: require("../assets/fonts/Lato-Regular.ttf"),
     LatoBold: require("../assets/fonts/Lato-Bold.ttf"),
   });
-
-  if (!loaded) {
-    return null;
-  }
 
   const onSubmit = () => {
     if (!validator.validate(email.trim())) {
@@ -38,13 +36,14 @@ export default function LoginScreen({ navigation }) {
     } else if (password === "") {
       setPasswordIsError(true);
     } else {
-      // UserService.login(email.trim(), password, handleLogin);
-      UserService.getTwoFactor(email.trim(), password, checkMfaSuccess, failure);
+      setLoading(true);
+      UserService.getTwoFactor(email.trim(), checkMfaSuccess, failure);
     }
   };
 
   const checkMfaSuccess = (enabled) => {
     if (enabled) {
+      setLoading(false);
       navigation.navigate("VerifyEmail", {
         source: "Login",
         email: email.trim(),
@@ -61,10 +60,12 @@ export default function LoginScreen({ navigation }) {
 
   const failure = (message = `Something went wrong. 
   Please try again later`) => {
+    setLoading(false);
     Alert.alert("Login Failed", message);
   }
 
   const onSetUser = () => {
+    setLoading(false);
     navigation.navigate("HomeLoggedIn");
   }
 
@@ -156,6 +157,7 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.separator} />
         </View>
         <StatusBar style="auto" />
+       {loading && <Loading/>}
       </View>
     </HideKeyboard>
   );

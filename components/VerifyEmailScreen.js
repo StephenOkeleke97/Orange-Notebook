@@ -4,8 +4,10 @@ import { Icon } from "react-native-elements";
 import { useState } from "react";
 import UserService from "../services/UserService";
 import { setUser } from "../services/CurrentUser";
+import Loading from "./Loading";
 
 export default function VerifyEmailScreen({ navigation, route }) {
+  const [loading, setLoading] = useState(false);
   const { email, password } = route.params;
   const numList = [
     [1, 2, 3],
@@ -64,6 +66,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
     if (verificationCode.length < 4) {
       setErrorText("Code must have 4 digits");
     } else {
+      setLoading(true);
       handleSubmit();
     }
   };
@@ -87,16 +90,17 @@ export default function VerifyEmailScreen({ navigation, route }) {
           email,
           password,
           verificationCode,
-          this.onSuccess,
-          failure
+          this.onSuccess.bind(this),
+          this.onFailure.bind(this)
         );
       },
 
       onSuccess: function (data) {
-        setUser(email.trim(), data.token, this.onSetUser);
+        setUser(email.trim(), data.token, this.onSetUser.bind(this));
       },
 
       onSetUser: function () {
+        setLoading(false);
         navigation.navigate("HomeLoggedIn");
       },
 
@@ -104,12 +108,14 @@ export default function VerifyEmailScreen({ navigation, route }) {
         message = `Something went wrong. 
       Please try again later`
       ) {
+        setLoading(false);
         Alert.alert("Login Failed", message);
       },
     },
 
     reset: {
       onSubmit: function () {
+        setLoading(false);
         navigation.navigate("CreatePassword", {
           email: email,
           code: verificationCode,
@@ -128,34 +134,42 @@ export default function VerifyEmailScreen({ navigation, route }) {
       },
 
       onSuccess: function () {
+        setLoading(false);
         Alert.alert(
           "Account Created",
           "Log in to your account with your email and password"
         );
-        navigation.popToTop();
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'Home'}],
+        });
       },
 
       onFailure: function (
         message = `Something went wrong. 
       Please try again later`
       ) {
+        setLoading(false);
         Alert.alert("Create Account Failed", message);
       },
     },
   };
 
   const handleRequestCode = () => {
+    setLoading(true);
     UserService.requestCode(email, tokenRequestSuccessful, failure);
-  }
+  };
 
   const tokenRequestSuccessful = () => {
+    setLoading(false);
     Alert.alert("Code Sent");
-  }
+  };
 
   const failure = (
     message = `Something went wrong. 
   Please try again later`
   ) => {
+    setLoading(false);
     Alert.alert("Code Request Failed", message);
   };
 
@@ -194,9 +208,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
           </View>
         </View>
         <Text style={styles.errorText}>{errorText}</Text>
-        <TouchableOpacity
-          onPress={handleRequestCode}
-        >
+        <TouchableOpacity onPress={handleRequestCode}>
           <Text style={styles.inputViewText1}>
             Didn't receive code? Request again
           </Text>
@@ -260,6 +272,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       </View>
+      {loading && <Loading />}
     </View>
   );
 }
