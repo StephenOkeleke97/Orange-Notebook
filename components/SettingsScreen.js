@@ -15,12 +15,11 @@ import {
   getTwoFactor,
   toggleTwoFactor,
   deleteUser,
-  logOut,
 } from "./settings.js";
 import { useFocusEffect } from "@react-navigation/native";
 import UserService from "../services/UserService.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {useNetInfo} from "@react-native-community/netinfo";
+import { useNetInfo } from "@react-native-community/netinfo";
 
 export default function SettingsScreen({ navigation }) {
   const netInfo = useNetInfo();
@@ -36,9 +35,9 @@ export default function SettingsScreen({ navigation }) {
   );
 
   useEffect(() => {
-    getUser().then(user => {
+    getUser().then((user) => {
       setUserEmail(user);
-    })
+    });
   }, [userEmail]);
 
   const getUser = async () => {
@@ -49,7 +48,7 @@ export default function SettingsScreen({ navigation }) {
       console.log(error);
     }
     return user;
-  }
+  };
 
   const setDetailEnabledCallBack = (bool) => {
     setIsDetailedEnabled(bool);
@@ -70,26 +69,26 @@ export default function SettingsScreen({ navigation }) {
   const toggleTwoFactorEnabled = () => {
     if (netInfo.isConnected)
       toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack);
-    else (Alert.alert("No Internet", 
-    "Internet connectivity is required to perform this action"));
+    else
+      Alert.alert(
+        "No Internet",
+        "Internet connectivity is required to perform this action"
+      );
   };
 
   const syncWithServerCallBack = (bool) => {
-    UserService.enableTwoFactor(
-      userEmail,
-      bool,
-      enableTwoFactorError
-    );
+    UserService.enableTwoFactor(userEmail, bool, enableTwoFactorError);
   };
 
   const enableTwoFactorError = () => {
-    const action = twoFactor ? "Disable" : "Enable"
-    Alert.alert(`Failed to ${action} 2FA`,
-    "Something went wrong. Please try again later");
+    const action = twoFactor ? "Disable" : "Enable";
+    Alert.alert(
+      `Failed to ${action} 2FA`,
+      "Something went wrong. Please try again later"
+    );
     //Revert
     toggleTwoFactor(setTwoFactorCallBack, () => {});
-
-  }
+  };
 
   const handleDeleteAccount = () => {
     Alert.alert(
@@ -106,38 +105,24 @@ export default function SettingsScreen({ navigation }) {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            UserService.delete(
-              userEmail,
-              handleDeleteFromLocalAndLogOut
-            );
+            UserService.delete(deleteSuccessful, deleteFailure);
           },
         },
       ]
     );
   };
 
-  const handleDeleteFromLocalAndLogOut = () => {
+  const deleteSuccessful = () => {
+    //Delete Local
     deleteUser(() => {
       navigation.navigate("Home");
     });
   };
 
-  const handleLogOut = () => {
-    Alert.alert("Log out", "You will be logged out of your account", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
-
-      {
-        text: "Log out",
-        onPress: () => {
-          logOut(() => {
-            navigation.navigate("Home");
-          });
-        },
-      },
-    ]);
+  const deleteFailure = (
+    message = `Something went wrong. Please try again later`
+  ) => {
+    Alert.alert("Delete Account Failed", message);
   };
 
   return (
@@ -196,12 +181,9 @@ export default function SettingsScreen({ navigation }) {
             Delete Account
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.settingsComponent}
-          activeOpacity={0.5}
-          onPress={handleLogOut}
-        >
-          <Text style={styles.settingsText}>Log out</Text>
+        <TouchableOpacity style={styles.settingsComponent} activeOpacity={0.5}>
+          <Text style={styles.settingsText}>FAQ</Text>
+          <Icon name="chevron-right" type="material-community" color="#000" />
         </TouchableOpacity>
       </View>
     </View>

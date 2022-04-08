@@ -42,7 +42,8 @@ export default function AddNoteToCategoryScreen({ route, navigation }) {
         categoryName,
         () => {
           navigation.navigate("HomeLoggedIn");
-        }
+        },
+        3
       );
     };
 

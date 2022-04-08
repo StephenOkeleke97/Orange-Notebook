@@ -15,13 +15,7 @@ export function selectCategories(selectCategoriesCallback) {
   });
 }
 
-export function createCategory(
-  name,
-  red,
-  green,
-  blue,
-  updateNotesCallBack
-) {
+export function createCategory(name, red, green, blue, updateNotesCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
       "INSERT INTO Category(CategoryName, RedColor, GreenColor, BlueColor) VALUES (" +
@@ -37,24 +31,47 @@ export function createCategory(
   });
 }
 
+/**
+ * Add notes to category after creation of
+ * category. Sometimes, the this method is
+ * called before the transaction to create category is
+ * over. The number of retries indicates how many times
+ * the method should be called when that happens.
+ *
+ * @param {*} notes notes to be updated
+ * @param {*} categoryName new category name
+ * @param {*} navigationCallback function called after completion
+ * @param {*} retries number of retries after error
+ */
 export function updateNoteCategories(
   notes,
   categoryName,
-  navigationCallback
+  navigationCallback,
+  retries
 ) {
-  notes.forEach((note, index, array) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "UPDATE Notes SET CategoryName = ? WHERE NotesID = ?",
-        [categoryName, note],
-        (t, success) => {
-          if (index === array.length - 1) navigationCallback();
-        },
-        (t, error) =>
-          console.log("Error updating notes when change category:", error)
-      );
+  if (retries > 0) {
+    notes.forEach((note, index, array) => {
+      db.transaction((tx) => {
+        tx.executeSql(
+          "UPDATE Notes SET CategoryName = ? WHERE NotesID = ?",
+          [categoryName, note],
+          (t, success) => {
+            if (index === array.length - 1) navigationCallback();
+          },
+          (t, error) => {
+            updateNoteCategories(
+              notes,
+              categoryName,
+              navigationCallback,
+              retries - 1
+            );
+            console.log(t);
+            console.log("Error updating notes when create category:", error);
+          }
+        );
+      });
     });
-  });
+  }
 }
 
 export function editCategory(name, red, green, blue, oldName) {
@@ -71,10 +88,7 @@ export function editCategory(name, red, green, blue, oldName) {
   });
 }
 
-export function deleteCategory(
-  selectedCategories,
-  deleteCategoryCallBack
-) {
+export function deleteCategory(selectedCategories, deleteCategoryCallBack) {
   selectedCategories.forEach((categoryName) => {
     db.transaction((tx) => {
       tx.executeSql(
@@ -164,11 +178,7 @@ export function selectAllNotes(deleted, pinned, allNoteCallback) {
   });
 }
 
-export function selectNotesOfCategory(
-  pinned,
-  category,
-  noteCategoryCallback
-) {
+export function selectNotesOfCategory(pinned, category, noteCategoryCallback) {
   db.transaction((tx) => {
     tx.executeSql(
       "SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor " +

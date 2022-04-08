@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Text, Alert } from "react-native";
 import { globalStyles } from "../styles/global";
 import { Icon } from "react-native-elements";
 import { useState } from "react";
@@ -6,7 +6,7 @@ import UserService from "../services/UserService";
 import { setUser } from "../services/CurrentUser";
 
 export default function VerifyEmailScreen({ navigation, route }) {
-  const { email } = route.params;
+  const { email, password } = route.params;
   const numList = [
     [1, 2, 3],
     [4, 5, 6],
@@ -16,6 +16,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
   const [num2, setNum2] = useState("");
   const [num3, setNum3] = useState("");
   const [num4, setNum4] = useState("");
+  const verificationCode = `${num1}` + `${num2}` + `${num3}` + `${num4}`;
   const [currentNum, setCurrentNum] = useState(1);
   const [nextNum, setNextNum] = useState(1);
   const [errorText, setErrorText] = useState("");
@@ -60,27 +61,103 @@ export default function VerifyEmailScreen({ navigation, route }) {
   };
 
   const onSubmit = () => {
-    const verificationCode = `${num1}` + `${num2}` + `${num3}` + `${num4}`;
     if (verificationCode.length < 4) {
       setErrorText("Code must have 4 digits");
     } else {
-      UserService.verifyUser(email, verificationCode, handleNavigation);
+      handleSubmit();
     }
   };
 
-  const handleNavigation = () => {
-    if (route.params.source === "ResetPassword") {
-      navigation.navigate("CreatePassword", {
-        email: email,
-      });
+  const handleSubmit = () => {
+    const source = route.params.source;
+
+    if (source.toLowerCase() === "login") {
+      verifyFunctionWrapper.login.onSubmit();
+    } else if (source.toLowerCase() === "reset") {
+      verifyFunctionWrapper.reset.onSubmit();
     } else {
-      setUser(email, onSetUser);
+      verifyFunctionWrapper.register.onSubmit();
     }
   };
 
-  const onSetUser = () => {
-    navigation.navigate("HomeLoggedIn");
+  const verifyFunctionWrapper = {
+    login: {
+      onSubmit: function () {
+        UserService.login(
+          email,
+          password,
+          verificationCode,
+          this.onSuccess,
+          failure
+        );
+      },
+
+      onSuccess: function (data) {
+        setUser(email.trim(), data.token, this.onSetUser);
+      },
+
+      onSetUser: function () {
+        navigation.navigate("HomeLoggedIn");
+      },
+
+      onFailure: function (
+        message = `Something went wrong. 
+      Please try again later`
+      ) {
+        Alert.alert("Login Failed", message);
+      },
+    },
+
+    reset: {
+      onSubmit: function () {
+        navigation.navigate("CreatePassword", {
+          email: email,
+          code: verificationCode,
+        });
+      },
+    },
+
+    register: {
+      onSubmit: function () {
+        UserService.enableAccount(
+          email,
+          verificationCode,
+          this.onSuccess,
+          this.onFailure
+        );
+      },
+
+      onSuccess: function () {
+        Alert.alert(
+          "Account Created",
+          "Log in to your account with your email and password"
+        );
+        navigation.popToTop();
+      },
+
+      onFailure: function (
+        message = `Something went wrong. 
+      Please try again later`
+      ) {
+        Alert.alert("Create Account Failed", message);
+      },
+    },
+  };
+
+  const handleRequestCode = () => {
+    UserService.requestCode(email, tokenRequestSuccessful, failure);
   }
+
+  const tokenRequestSuccessful = () => {
+    Alert.alert("Code Sent");
+  }
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    Alert.alert("Code Request Failed", message);
+  };
 
   return (
     <View style={styles.container}>
@@ -118,11 +195,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
         </View>
         <Text style={styles.errorText}>{errorText}</Text>
         <TouchableOpacity
-          onPress={() => {
-            UserService.resendVerification(email, () => {
-              alert("Verification sent");
-            });
-          }}
+          onPress={handleRequestCode}
         >
           <Text style={styles.inputViewText1}>
             Didn't receive code? Request again

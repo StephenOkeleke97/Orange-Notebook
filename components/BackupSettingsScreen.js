@@ -81,12 +81,29 @@ const BackupSettingsScreen = ({ navigation }) => {
     toggleBackupEnabled(setBackupEnabledCallBack);
   };
 
-  const setProgressActiveCallBack = (boolean) => {
-    setBackupInProgress(boolean);
+  const updateProgress = (percent) => {
+    setProgressPercent(percent);
   };
 
-  const setProgressCallBack = (percent) => {
-    setProgressPercent(percent);
+  /**
+   * Action refers to one of Back Up,
+   * Restore and Delete.
+   */
+  const actionSuccessful = (action) => {
+    setBackupInProgress(false);
+    Alert.alert("", `${action} Successful`);
+  };
+
+  /**
+   * Action refers to one of Back Up,
+   * Restore and Delete.
+   */
+  const actionFailed = (
+    action,
+    message = "Something went wrong. Please try again later"
+  ) => {
+    setBackupInProgress(false);
+    Alert.alert(`${action} Failed`, message);
   };
 
   const handleBackUpToServer = () => {
@@ -102,10 +119,13 @@ const BackupSettingsScreen = ({ navigation }) => {
         {
           text: "Back Up",
           onPress: () => {
+            setProgressPercent(0);
+            setBackupInProgress(true);
             UserService.backUp(
               userEmail,
-              setProgressActiveCallBack,
-              setProgressCallBack
+              actionSuccessful,
+              actionFailed,
+              updateProgress
             );
           },
         },
@@ -113,9 +133,21 @@ const BackupSettingsScreen = ({ navigation }) => {
     );
   };
 
-  const updateLastDateAndSize = (date, size) => {
-    setLastBackupDate(date);
-    setLastBackupSize(size);
+  const updateLastDateAndSize = () => {
+    UserService.getLastBackUpInfo((data) => {
+      const date = parseDateFromServer(data.date);
+
+      setLastBackupDate(date);
+      setLastBackupSize(data.size / 100000);
+    });
+  };
+
+  const parseDateFromServer = (date) => {
+    let temp = new Date(Date.parse(date));
+    const parsedDate = `${temp.getFullYear()}-${
+      temp.getMonth() + 1
+    }-${temp.getDate()} ${temp.getHours()}:${temp.getMinutes()}:${temp.getSeconds()}`;
+    return parsedDate;
   };
 
   const handleRestoreFromServer = () => {
@@ -131,13 +163,13 @@ const BackupSettingsScreen = ({ navigation }) => {
         {
           text: "Restore",
           onPress: () => {
+            setProgressPercent(0);
+            setBackupInProgress(true);
             UserService.restoreBackup(
-              userEmail,
-              setProgressActiveCallBack,
-              setProgressCallBack,
-              updateLastDateAndSize,
-              lastDate,
-              lastSize
+              actionSuccessful,
+              actionFailed,
+              updateProgress,
+              updateLastDateAndSize
             );
           },
         },
@@ -159,11 +191,10 @@ const BackupSettingsScreen = ({ navigation }) => {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            UserService.deleteBackup(
-              userEmail,
-              setProgressActiveCallBack,
-              setProgressCallBack
-            );
+            setProgressPercent("deleting...");
+            setBackupInProgress(true);
+
+            UserService.deleteBackup(actionSuccessful, actionFailed);
           },
         },
       ]

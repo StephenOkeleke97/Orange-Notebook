@@ -4,6 +4,7 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useState } from "react";
 import { Icon } from "react-native-elements";
@@ -32,19 +33,27 @@ export default function CreateAccountScreen({ navigation }) {
   }
 
   const onSubmit = () => {
-    const pEmail = email.trim();
-    if (!validator.validate(pEmail)) {
+    if (!validator.validate(email.trim())) {
       setEmailIsError(true);
     } else if (!verifyPassword.test(password)) {
       setPasswordIsError(true);
     } else {
-      UserService.addUser(pEmail, password, () => {
-        navigation.navigate("VerifyEmail", {
-          email: pEmail,
-        });
-      });
+      UserService.register(email.trim(), password, registerSuccessful, failure);
     }
   };
+
+  const registerSuccessful = () => {
+    navigation.navigate("VerifyEmail", {
+      source: "Register",
+      email: email.trim(),
+      password: password
+    });
+  }
+
+  const failure = (message = `Something went wrong. 
+  Please try again later`) => {
+    Alert.alert("Create Account Failed", message);
+  }
 
   return (
     <HideKeyboard>

@@ -34,8 +34,7 @@ export default function HomeLoggedInScreen() {
   }, [userEmail]);
 
   useEffect(() => {
-    if (userEmail)
-      UserService.getLastBackUpInfo(userEmail, updateLocalBackUpInfo);
+    if (userEmail) UserService.getLastBackUpInfo(updateLocalBackUpInfo);
   }, [userEmail]);
 
   useEffect(() => {
@@ -61,11 +60,20 @@ export default function HomeLoggedInScreen() {
     });
   };
 
-  const updateLocalBackUpInfo = (dateAndSizeList) => {
-    let date = dateAndSizeList[0];
-    let size = dateAndSizeList[1];
-    setLastBackupDate(date);
-    setLastBackupSize(size);
+  const updateLocalBackUpInfo = (data) => {
+    if (data.date && data.size) {
+      const date = parseDateFromServer(data.date);
+      setLastBackupDate(date);
+      setLastBackupSize(data.size / 100000);
+    }
+  };
+
+  const parseDateFromServer = (date) => {
+    const temp = new Date(Date.parse(date));
+    const parsedDate = `${temp.getFullYear()}-${
+      temp.getMonth() + 1
+    }-${temp.getDate()} ${temp.getHours()}:${temp.getMinutes()}:${temp.getSeconds()}`;
+    return parsedDate;
   };
 
   const getUser = async () => {

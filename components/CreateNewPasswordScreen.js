@@ -14,6 +14,7 @@ import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
 
 const CreateNewPasswordScreen = ({ navigation, route }) => {
+  const { email, code } = route.params;
   const verifyPassword =
     /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
   const [password, setPassword] = useState("");
@@ -29,13 +30,20 @@ const CreateNewPasswordScreen = ({ navigation, route }) => {
     } else if (confirmPassword !== password) {
       setNotMatch(true);
     } else {
-      setTimeout(() => {
-        UserService.resetPassword(route.params.email, password, () => {
-          Alert.alert("Confirmation", "Your password has been reset");
-          navigation.navigate("Login");
-        });
-      }, 2000);
+      UserService.resetPassword(email, password, code, resetSuccessful, failure);
     }
+  };
+
+  const resetSuccessful = () => {
+    Alert.alert("Confirmation", "Your password has been reset");
+    navigation.navigate("Login");
+  }
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    Alert.alert("Reset Password Failed", message);
   };
 
   return (

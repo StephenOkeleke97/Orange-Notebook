@@ -7,6 +7,7 @@ import {
   TextInput,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
 } from "react-native";
 import { Icon } from "react-native-elements";
 import UserService from "../services/UserService";
@@ -18,17 +19,27 @@ const ResetPasswordScreen = ({ navigation }) => {
   const validator = require("email-validator");
 
   const handleNavigateToVerify = () => {
-    if (validator.validate(email)) {
-      UserService.resendVerification(email, () => {
-        navigation.navigate("VerifyEmail", {
-          source: "ResetPassword",
-          email: email,
-        });
-      });
+    if (validator.validate(email.trim())) {
+      UserService.requestCode(email.trim(), requestCodeSuccessful, failure);
     } else {
       setEmailIsError(true);
     }
   };
+
+  const requestCodeSuccessful = () => {
+    navigation.navigate("VerifyEmail", {
+      source: "Reset",
+      email: email,
+    });
+  };
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    Alert.alert("Reset Password Failed", message);
+  };
+
   return (
     <TouchableWithoutFeedback
       style={globalStyles.container}
