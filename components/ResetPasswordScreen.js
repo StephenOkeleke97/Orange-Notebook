@@ -12,14 +12,17 @@ import {
 import { Icon } from "react-native-elements";
 import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
+import Loading from "./Loading";
 
 const ResetPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [emailIsError, setEmailIsError] = useState(false);
   const validator = require("email-validator");
+  const [loading, setLoading] = useState(false);
 
   const handleNavigateToVerify = () => {
     if (validator.validate(email.trim())) {
+      setLoading(true);
       UserService.requestCode(email.trim(), requestCodeSuccessful, failure);
     } else {
       setEmailIsError(true);
@@ -27,6 +30,7 @@ const ResetPasswordScreen = ({ navigation }) => {
   };
 
   const requestCodeSuccessful = () => {
+    setLoading(false);
     navigation.navigate("VerifyEmail", {
       source: "Reset",
       email: email,
@@ -37,6 +41,7 @@ const ResetPasswordScreen = ({ navigation }) => {
     message = `Something went wrong. 
   Please try again later`
   ) => {
+    setLoading(false);
     Alert.alert("Reset Password Failed", message);
   };
 
@@ -84,6 +89,7 @@ const ResetPasswordScreen = ({ navigation }) => {
             <Text style={globalStyles.buttonText}>Send Verification</Text>
           </TouchableOpacity>
         </View>
+        {loading && <Loading />}
       </View>
     </TouchableWithoutFeedback>
   );

@@ -12,6 +12,7 @@ import {
 import { Icon } from "react-native-elements";
 import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
+import Loading from "./Loading";
 
 const CreateNewPasswordScreen = ({ navigation, route }) => {
   const { email, code } = route.params;
@@ -23,6 +24,7 @@ const CreateNewPasswordScreen = ({ navigation, route }) => {
   const [invalidPassword, setInvalidPassword] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleCreatePassword = () => {
     if (!verifyPassword.test(password)) {
@@ -30,19 +32,28 @@ const CreateNewPasswordScreen = ({ navigation, route }) => {
     } else if (confirmPassword !== password) {
       setNotMatch(true);
     } else {
-      UserService.resetPassword(email, password, code, resetSuccessful, failure);
+      setLoading(true);
+      UserService.resetPassword(
+        email,
+        password,
+        code,
+        resetSuccessful,
+        failure
+      );
     }
   };
 
   const resetSuccessful = () => {
+    setLoading(false);
     Alert.alert("Confirmation", "Your password has been reset");
     navigation.navigate("Login");
-  }
+  };
 
   const failure = (
     message = `Something went wrong. 
   Please try again later`
   ) => {
+    setLoading(false);
     Alert.alert("Reset Password Failed", message);
   };
 
@@ -139,6 +150,7 @@ const CreateNewPasswordScreen = ({ navigation, route }) => {
             <Text style={globalStyles.buttonText}>Create Password</Text>
           </TouchableOpacity>
         </View>
+        {loading && <Loading />}
       </View>
     </TouchableWithoutFeedback>
   );

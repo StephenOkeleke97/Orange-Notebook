@@ -88,7 +88,6 @@ class UserService {
         }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
         setLastBackupDate(date);
         setLastBackupSize(size / 100000);
-        // setProgressCallBack(0);
         if (isAutomatic) automaticCallBack();
         successful("Backup");
       })
@@ -98,70 +97,11 @@ class UserService {
       });
   }
 
-  // restoreBackup(successful, failure, updateProgress, updateLastDateAndSize) {
-  //   this._checkIfBackupExists(failure, (auth) => {
-  //     FileSystem.createDownloadResumable(
-  //       restoreAPI + "t",
-  //       // FileSystem.documentDirectory + "SQLite/notes.db",
-  //       FileSystem.documentDirectory + "SQLite/backup",
-
-  //       {
-  //         sessionType: FileSystemSessionType.BACKGROUND,
-  //         headers: {
-  //           Authorization: auth,
-  //         },
-  //       },
-  //       (progress) => {
-  //         let percentCompleted = Math.floor(
-  //           (progress.totalBytesExpectedToWrite / progress.totalBytesWritten) *
-  //             100
-  //         );
-  //         updateProgress(percentCompleted + "%");
-  //       },
-  //       null
-  //     )
-  //       .downloadAsync()
-  //       .then(() => {
-  //         FileSystem.getInfoAsync(FileSystem.documentDirectory+"SQLite/backup", {md5:true})
-  //         .then(res => {
-  //           console.log(res);
-  //         })
-  //         db._db.close();
-  //         updateLastDateAndSize();
-  //         successful("Restore");
-  //       })
-  //       .catch(() => {
-  //         failure("Restore");
-  //       });
-  //   });
-  // }
-
-  // _checkIfBackupExists(failure, callback) {
-  //   const uri = host + "backupexists";
-  //   axios
-  //     .get(uri, {
-  //       timeout: this.timeout,
-  //     })
-  //     .then((response) => {
-  //       console.log("Result: ", response.data.md5.toString("hex"));
-  //       callback(response.config.headers.Authorization);
-  //     })
-  //     .catch((error) => {
-  //       if (error.response && error.response.status === 404) {
-  //         failure("Restore", "There is no backup associated with this account");
-  //       } else {
-  //         failure("Restore");
-  //       }
-  //     });
-  // }
-
   restoreBackup(successful, failure, updateProgress, updateLastDateAndSize) {
     getToken().then((token) => {
       FileSystem.createDownloadResumable(
         restoreAPI,
-        // FileSystem.documentDirectory + "SQLite/notes.db",
         FileSystem.documentDirectory + "SQLite/backup",
-
         {
           sessionType: FileSystemSessionType.BACKGROUND,
           headers: {
@@ -214,15 +154,12 @@ class UserService {
     failure,
     updateLastDateAndSize
   ) {
-    console.log("SERVER:", serverChecksum.toLowerCase());
-    console.log("CLIENT:", clientChecksum.toLowerCase());
     if (serverChecksum.toLowerCase() === clientChecksum.toLowerCase()) {
       FileSystem.moveAsync({
         from: FileSystem.documentDirectory + "SQLite/backup",
         to: FileSystem.documentDirectory + "SQLite/notes.db",
       })
         .then(() => {
-          console.log("Success");
           updateLastDateAndSize();
           successful("Restore");
           db._db.close();
@@ -232,7 +169,7 @@ class UserService {
           failure("Restore");
         });
     } else {
-      failure("Restore");
+      failure("Restore", "File may have been corrupted during restore. Please try again.");
     }
   }
 
@@ -330,16 +267,17 @@ class UserService {
         timeout: this.timeout,
       })
       .then((response) => {
-        console.log(response.data);
+        // console.log("Success:", response.data);
         success(response.data);
       })
       .catch((error) => {
         if (error.response) {
-          console.log(error.response.data);
+          console.log("Error: " + error.response.data);
           failure(error.response.data.message);
         } else {
           failure();
         }
+        console.log(error);
       });
   }
 
@@ -358,12 +296,11 @@ class UserService {
       });
   }
 
-  getTwoFactor(email, password, success, failure) {
+  getTwoFactor(email, success, failure) {
     axios
       .post(getTwoFactorAPI, null, {
         params: {
           email: email,
-          password: password,
         },
         timeout: this.timeout,
       })
@@ -377,6 +314,7 @@ class UserService {
         } else {
           failure();
         }
+        console.log(error);
       });
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -20,12 +20,22 @@ import { useFocusEffect } from "@react-navigation/native";
 import UserService from "../services/UserService.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNetInfo } from "@react-native-community/netinfo";
+import Loading from "./Loading.js";
 
 export default function SettingsScreen({ navigation }) {
   const netInfo = useNetInfo();
   const [isDetailedEnabled, setIsDetailedEnabled] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  let isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    }
+  }, [])
 
   useFocusEffect(
     React.useCallback(() => {
@@ -51,11 +61,13 @@ export default function SettingsScreen({ navigation }) {
   };
 
   const setDetailEnabledCallBack = (bool) => {
-    setIsDetailedEnabled(bool);
+    if (isMounted.current)
+      setIsDetailedEnabled(bool);
   };
 
   const setTwoFactorCallBack = (bool) => {
-    setTwoFactor(bool);
+    if (isMounted.current)
+      setTwoFactor(bool);
   };
 
   const handleNavigateToBackupSettings = () => {
@@ -105,6 +117,7 @@ export default function SettingsScreen({ navigation }) {
           text: "Delete",
           style: "destructive",
           onPress: () => {
+            setLoading(true);
             UserService.delete(deleteSuccessful, deleteFailure);
           },
         },
@@ -115,13 +128,18 @@ export default function SettingsScreen({ navigation }) {
   const deleteSuccessful = () => {
     //Delete Local
     deleteUser(() => {
-      navigation.navigate("Home");
+      setLoading(false);
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'Home'}],
+      });
     });
   };
 
   const deleteFailure = (
     message = `Something went wrong. Please try again later`
   ) => {
+    setLoading(false);
     Alert.alert("Delete Account Failed", message);
   };
 
@@ -186,6 +204,7 @@ export default function SettingsScreen({ navigation }) {
           <Icon name="chevron-right" type="material-community" color="#000" />
         </TouchableOpacity>
       </View>
+      {loading && <Loading />}
     </View>
   );
 }
