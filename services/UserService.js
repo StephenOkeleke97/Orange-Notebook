@@ -4,25 +4,47 @@ import { FileSystemSessionType } from "expo-file-system";
 import * as SQLite from "expo-sqlite";
 import { Alert } from "react-native";
 import { setLastBackupDate, setLastBackupSize } from "../components/settings";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const auth = { username: "user", password: "password" };
-const host = "http://192.168.1.124:8080/api/";
-const verifyEmailAPI = host + "verifyEmail";
-const postNewUserAPI = host + "addUser";
-const verifyOTPAPI = host + "verifyOTP";
-const requestNewCodeAPI = host + "resendVerification";
-const loginAPI = host + "login";
-const backUpAPI = host + "backup";
-const restoreBackupAPI = host + "files/";
-const deleteBackupAPI = host + "deleteBackup/";
-const enableTwoFactorAPI = host + "enableTwoFactor";
-const getTwoFactorAPI = host + "getTwoFactor";
-const deleteUserAPI = host + "deleteAccount";
-const resetPasswordAPI = host + "resetPassword";
-const updateLastBackUpAPI = host + "updateLastBackUp";
-const getLastBackUpAPI = host + "lastBackUp";
+const rawHost = "http://192.168.1.100:8080/";
+const host = "http://192.168.1.100:8080/api/";
+const registerAPI = host + "register";
+const enableAPI = host + "enableaccount";
+const requestTokenAPI = host + "requesttoken";
+const loginAPI = rawHost + "login";
+const backupAPI = host + "backup";
+const restoreAPI = host + "restore";
+const deleteBackupAPI = host + "deletebackup";
+const enableMfaAPI = host + "enablemfa";
+const getTwoFactorAPI = host + "mfaenabled";
+const deleteUserAPI = host + "deleteaccount";
+const resetPasswordAPI = host + "resetpassword";
+const getLastBackUpInfoAPI = host + "getbackupinfo";
 
 const db = SQLite.openDatabase("notes.db");
+
+(function () {
+  getToken().then((token) => {
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = "Bearer " + token;
+    } else {
+      axios.defaults.headers.common["Authorization"] = null;
+      /*if setting null does not remove `Authorization` header then try     
+        delete axios.defaults.headers.common['Authorization'];
+      */
+    }
+  });
+})();
+
+async function getToken() {
+  let token;
+  try {
+    token = await AsyncStorage.getItem("jwt");
+  } catch (error) {
+    console.log(error);
+  }
+  return token;
+}
 
 class UserService {
   timeout = 10000;
@@ -30,279 +52,305 @@ class UserService {
 
   async backUp(
     email,
-    setProgressActiveCallBack,
-    setProgressCallBack,
-    isAutomatic,
+    successful,
+    failure,
+    updateProgress,
+    isAutomatic = false,
     automaticCallBack
   ) {
     let size = 0;
-    setProgressActiveCallBack(true);
-    setTimeout(() => {
-      const data = new FormData();
-      const path = FileSystem.documentDirectory + "SQLite/notes.db";
-      data.append("file", {
-        uri: path,
-        type: "db",
-        name: `${email}backup`,
-      });
+    const data = new FormData();
+    const path = FileSystem.documentDirectory + "SQLite/notes.db";
+    data.append("file", {
+      uri: path,
+      type: "db",
+      name: `${email}backup`,
+    });
 
-      axios
-        .post(backUpAPI, data, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          auth: auth,
-          timeout: this.timeout,
-          onUploadProgress: (progress) => {
-            size = progress.total;
-            let percentCompleted = Math.floor(
-              (progress.loaded / progress.total) * 100
-            );
-            setProgressCallBack(percentCompleted + "%");
-          },
-        })
-        .then((response) => {
-          if (response.status === 200) {
-            console.log(response.status);
-            const d = new Date();
-            const date = `${d.getFullYear()}-${
-              d.getMonth() + 1
-            }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
-            setLastBackupDate(date);
-            setLastBackupSize(size / 100000);
-            setProgressActiveCallBack(false);
-            setProgressCallBack(0);
-            this._successAlert("Back Up", isAutomatic);
-            if (isAutomatic) automaticCallBack();
-            this.updateLastBackUpInfo(email, 5, date, size / 100000);
-          } else {
-            this._errorAlert("Back Up", isAutomatic);
-            setProgressActiveCallBack(false);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-          this._errorAlert("Back Up", isAutomatic);
-          setProgressActiveCallBack(false);
-        });
-    }, this.initialWait);
-  }
-
-  restoreBackup(
-    email,
-    setProgressActiveCallBack,
-    setProgressCallBack,
-    updateLastDateAndSize,
-    lastDate,
-    lastSize
-  ) {
-    setProgressActiveCallBack(true);
-    setTimeout(() => {
-      this._checkIfBackupExists(email, setProgressActiveCallBack, () => {
-        FileSystem.createDownloadResumable(
-          restoreBackupAPI + `${email}backup`,
-          FileSystem.documentDirectory + "SQLite/notes.db",
-          {
-            sessionType: FileSystemSessionType.BACKGROUND,
-          },
-          (progress) => {
-            let percentCompleted = Math.floor(
-              (progress.totalBytesExpectedToWrite /
-                progress.totalBytesWritten) *
-                100
-            );
-            setProgressCallBack(percentCompleted + "%");
-          },
-          null
-        )
-          .downloadAsync()
-          .then(() => {
-            db._db.close();
-            updateLastDateAndSize(lastDate, lastSize);
-            setProgressActiveCallBack(false);
-            setProgressCallBack(0);
-            this._successAlert("Restore");
-          })
-          .catch(() => {
-            this._errorAlert("Restore");
-            setProgressActiveCallBack(false);
-          });
-      });
-    }, this.initialWait);
-  }
-
-  _checkIfBackupExists(email, setProgressActiveCallBack, callback) {
-    const uri = host + "backupexists/";
     axios
-      .get(uri + `${email}backup`, {
-        auth: auth,
-        timeout: this.timeout,
-      })
-      .then(() => {
-        callback();
-      })
-      .catch((error) => {
-        if (error.response && error.response.status === 404) {
-          this._noBackupAlert();
-          setProgressActiveCallBack(false);
-        } else {
-          this._errorAlert("Restore");
-          setProgressActiveCallBack(false);
-        }
-      });
-  }
-
-  deleteBackup(email, setProgressActiveCallBack, setProgressCallBack) {
-    setProgressActiveCallBack(true);
-    setProgressCallBack("deleting...");
-    setTimeout(() => {
-      axios
-        .delete(deleteBackupAPI + `${email}backup`, {
-          auth: auth,
-          timeout: this.timeout,
-          params: {
-            userEmail: email,
-          },
-        })
-        .then((response) => {
-          if (response.status === 200) {
-            setLastBackupDate(null);
-            setLastBackupSize(null);
-            setProgressActiveCallBack(false);
-            setProgressCallBack(0);
-            this._successAlert("Delete");
-          } else {
-            this._errorAlert("Delete");
-            setProgressActiveCallBack(false);
-            setProgressCallBack(0);
-          }
-        })
-        .catch((error) => {
-          if (error.response === undefined) this._errorAlert("Delete");
-          else if (error.response.status === 404) this._noBackupAlert();
-          else this._errorAlert("Delete");
-          setProgressActiveCallBack(false);
-          setProgressCallBack(0);
-        });
-    }, this.initialWait);
-  }
-
-  addUser(userEmail, password, callback) {
-    axios
-      .get(verifyEmailAPI, {
-        params: {
-          userEmail: userEmail,
+      .post(backupAPI, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-        auth: auth,
         timeout: this.timeout,
+        onUploadProgress: (progress) => {
+          size = progress.total;
+          let percentCompleted = Math.floor(
+            (progress.loaded / progress.total) * 100
+          );
+          updateProgress(percentCompleted + "%");
+        },
       })
       .then((response) => {
-        console.log(response.data);
-        if (response.data === true) {
-          this._postUser(userEmail, password, callback);
-        } else {
-          this._userExistsWhenCreateError();
-        }
+        const d = new Date();
+        const date = `${d.getFullYear()}-${
+          d.getMonth() + 1
+        }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
+        setLastBackupDate(date);
+        setLastBackupSize(size / 100000);
+        // setProgressCallBack(0);
+        if (isAutomatic) automaticCallBack();
+        successful("Backup");
       })
       .catch((error) => {
         console.log(error);
-        this._errorAlert("Create Account");
+        failure("Backup");
       });
   }
 
-  _postUser(email, password, callback) {
+  // restoreBackup(successful, failure, updateProgress, updateLastDateAndSize) {
+  //   this._checkIfBackupExists(failure, (auth) => {
+  //     FileSystem.createDownloadResumable(
+  //       restoreAPI + "t",
+  //       // FileSystem.documentDirectory + "SQLite/notes.db",
+  //       FileSystem.documentDirectory + "SQLite/backup",
+
+  //       {
+  //         sessionType: FileSystemSessionType.BACKGROUND,
+  //         headers: {
+  //           Authorization: auth,
+  //         },
+  //       },
+  //       (progress) => {
+  //         let percentCompleted = Math.floor(
+  //           (progress.totalBytesExpectedToWrite / progress.totalBytesWritten) *
+  //             100
+  //         );
+  //         updateProgress(percentCompleted + "%");
+  //       },
+  //       null
+  //     )
+  //       .downloadAsync()
+  //       .then(() => {
+  //         FileSystem.getInfoAsync(FileSystem.documentDirectory+"SQLite/backup", {md5:true})
+  //         .then(res => {
+  //           console.log(res);
+  //         })
+  //         db._db.close();
+  //         updateLastDateAndSize();
+  //         successful("Restore");
+  //       })
+  //       .catch(() => {
+  //         failure("Restore");
+  //       });
+  //   });
+  // }
+
+  // _checkIfBackupExists(failure, callback) {
+  //   const uri = host + "backupexists";
+  //   axios
+  //     .get(uri, {
+  //       timeout: this.timeout,
+  //     })
+  //     .then((response) => {
+  //       console.log("Result: ", response.data.md5.toString("hex"));
+  //       callback(response.config.headers.Authorization);
+  //     })
+  //     .catch((error) => {
+  //       if (error.response && error.response.status === 404) {
+  //         failure("Restore", "There is no backup associated with this account");
+  //       } else {
+  //         failure("Restore");
+  //       }
+  //     });
+  // }
+
+  restoreBackup(successful, failure, updateProgress, updateLastDateAndSize) {
+    getToken().then((token) => {
+      FileSystem.createDownloadResumable(
+        restoreAPI,
+        // FileSystem.documentDirectory + "SQLite/notes.db",
+        FileSystem.documentDirectory + "SQLite/backup",
+
+        {
+          sessionType: FileSystemSessionType.BACKGROUND,
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        },
+        (progress) => {
+          let percentCompleted = Math.floor(
+            (progress.totalBytesWritten / progress.totalBytesExpectedToWrite) *
+              100
+          );
+          updateProgress(percentCompleted + "%");
+        },
+        null
+      )
+        .downloadAsync()
+        .then((response) => {
+          FileSystem.getInfoAsync(
+            FileSystem.documentDirectory + "SQLite/backup",
+            { md5: true }
+          ).then((res) => {
+            if (response.status === 200) {
+              this.handleFileCopy(
+                response.headers.Checksum,
+                res.md5,
+                successful,
+                failure,
+                updateLastDateAndSize
+              );
+            } else if (response.status === 404) {
+              failure(
+                "Restore",
+                "There is no Backup associated with this account"
+              );
+            } else {
+              failure("Restore");
+            }
+          });
+        })
+        .catch(() => {
+          failure("Restore");
+        });
+    });
+  }
+
+  handleFileCopy(
+    serverChecksum,
+    clientChecksum,
+    successful,
+    failure,
+    updateLastDateAndSize
+  ) {
+    console.log("SERVER:", serverChecksum.toLowerCase());
+    console.log("CLIENT:", clientChecksum.toLowerCase());
+    if (serverChecksum.toLowerCase() === clientChecksum.toLowerCase()) {
+      FileSystem.moveAsync({
+        from: FileSystem.documentDirectory + "SQLite/backup",
+        to: FileSystem.documentDirectory + "SQLite/notes.db",
+      })
+        .then(() => {
+          console.log("Success");
+          updateLastDateAndSize();
+          successful("Restore");
+          db._db.close();
+        })
+        .catch((error) => {
+          console.log(error);
+          failure("Restore");
+        });
+    } else {
+      failure("Restore");
+    }
+  }
+
+  deleteBackup(success, failure) {
     axios
-      .post(postNewUserAPI, null, {
-        auth: auth,
+      .delete(deleteBackupAPI, {
+        timeout: this.timeout,
+      })
+      .then((response) => {
+        setLastBackupDate(null);
+        setLastBackupSize(null);
+        success("Delete");
+      })
+      .catch((error) => {
+        if (error.response && error.response.status === 404) {
+          failure("Delete", "There is no backup associated with this account");
+        } else {
+          failure("Delete");
+        }
+      });
+  }
+
+  register(email, password, success, failure) {
+    axios
+      .post(registerAPI, null, {
         params: {
           email: email,
           password: password,
         },
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          callback();
+        success();
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          failure(error.response.data.message);
         } else {
-          this._errorAlert("Create Account");
+          failure();
         }
-      })
-      .catch((error) => {
-        console.log(error);
-        this._errorAlert("Create Account");
       });
   }
 
-  async verifyUser(email, verificationCode, callback) {
-    await axios
-      .get(verifyOTPAPI, {
-        params: {
-          email,
-          verificationCode,
-        },
-        auth: auth,
-      })
-      .then((response) => {
-        if (response.data === true) callback();
-        else this._invalidVerificationCodeAlert();
-      })
-      .catch((error) => {
-        console.log(error);
-        this._errorAlert("Verification");
-      });
-  }
-
-  resendVerification(email, callback) {
+  enableAccount(email, code, success, failure) {
     axios
-      .get(requestNewCodeAPI, {
+      .post(enableAPI, null, {
         params: {
-          email,
+          email: email,
+          code: code,
         },
-        auth: auth,
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          callback();
-        } else {
-          alert("Something went wrong. Please try again later");
-        }
+        success();
       })
       .catch((error) => {
-        console.log(error);
-        alert("Something went wrong. Please try again later");
+        if (error.response) {
+          console.log(error.response);
+          failure(error.response.data.message);
+        } else {
+          failure();
+        }
       });
   }
 
-  login(email, password, callback) {
+  requestCode(email, success, failure) {
     axios
-      .get(loginAPI, {
+      .post(requestTokenAPI, null, {
         params: {
           email,
-          password,
         },
-        auth: auth,
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          if (response.data === true) callback();
-          else this._invalidUserNameOrPasswordAlert();
-        } else {
-          this._errorAlert("Login");
-        }
+        success();
       })
       .catch((error) => {
-        console.log(error);
-        this._errorAlert("Login");
+        if (error.response && error.response.status === 400) {
+          failure("There is no account associated with that email.");
+        } else {
+          failure();
+        }
+      });
+  }
+
+  login(email, password, code, success, failure) {
+    axios
+      .post(loginAPI, null, {
+        params: {
+          email: email,
+          password: password,
+          code: code,
+        },
+        timeout: this.timeout,
+      })
+      .then((response) => {
+        console.log(response.data);
+        success(response.data);
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response.data);
+          failure(error.response.data.message);
+        } else {
+          failure();
+        }
       });
   }
 
   enableTwoFactor(email, enable, failure) {
     axios
-      .post(enableTwoFactorAPI, null, {
-        auth: auth,
+      .post(enableMfaAPI, null, {
         params: {
           userEmail: email,
           enabled: enable,
         },
+        timeout: this.timeout,
       })
       .catch((error) => {
         console.log(error);
@@ -310,141 +358,74 @@ class UserService {
       });
   }
 
-  getTwoFactor(email, callback) {
+  getTwoFactor(email, password, success, failure) {
     axios
-      .get(getTwoFactorAPI, {
-        params: {
-          userEmail: email,
-        },
-        auth: auth,
-      })
-      .then((response) => {
-        console.log(response.data);
-        if (response.status === 200) {
-          callback(response.data);
-        } else {
-          this._errorAlert("Login");
-        }
-      })
-      .catch((error) => {
-        console.log(error);
-        this._errorAlert("Login");
-      });
-  }
-
-  delete(email, callback) {
-    axios
-      .delete(deleteUserAPI, {
-        auth: auth,
-        params: {
-          userEmail: email,
-        },
-      })
-      .then((response) => {
-        if (response.status === 200) {
-          callback();
-        } else {
-          this._errorAlert("Delete");
-        }
-      })
-      .catch((error) => {
-        this._errorAlert("Delete");
-      });
-  }
-
-  resetPassword(email, password, callback) {
-    axios
-      .put(resetPasswordAPI, null, {
-        auth: auth,
+      .post(getTwoFactorAPI, null, {
         params: {
           email: email,
           password: password,
         },
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          callback();
+        success(response.data);
+      })
+      .catch((error) => {
+        if (error.response && error.response.status === 400) {
+          console.log(error.response);
+          failure("Invalid Credentials");
         } else {
-          this._errorAlert("Password Reset");
-        }
-      })
-      .catch((error) => {
-        console.log(error.response);
-        this._errorAlert("Password Reset");
-      });
-  }
-
-  updateLastBackUpInfo(email, retries, date, size) {
-    axios
-      .put(updateLastBackUpAPI, null, {
-        params: {
-          userEmail: email,
-          date: date,
-          size: size,
-        },
-        auth: auth,
-      })
-      .catch((error) => {
-        if (retries > 0) {
-          setTimeout(() => {
-            this.updateLastBackUpInfo(email, retries - 1, date, size);
-          }, 60000);
+          failure();
         }
       });
   }
 
-  getLastBackUpInfo(email, getLastBackUpCallback) {
+  delete(success, failure) {
     axios
-      .get(getLastBackUpAPI, {
-        params: {
-          userEmail: email,
-        },
-        auth: auth,
+      .delete(deleteUserAPI, {
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          getLastBackUpCallback(response.data);
+        success();
+      })
+      .catch((error) => {
+        failure();
+      });
+  }
+
+  resetPassword(email, password, code, success, failure) {
+    axios
+      .put(resetPasswordAPI, null, {
+        params: {
+          email: email,
+          password: password,
+          code: code,
+        },
+        timeout: this.timeout,
+      })
+      .then((response) => {
+        success();
+      })
+      .catch((error) => {
+        if (error.response) {
+          failure(error.response.data.message);
+        } else {
+          failure();
         }
+      });
+  }
+
+  getLastBackUpInfo(updateLocal) {
+    axios
+      .get(getLastBackUpInfoAPI, {
+        timeout: this.timeout,
+      })
+      .then((response) => {
+        updateLocal(response.data);
       })
       .catch((error) => {
         console.log("Get last back up error:", error);
       });
-  }
-
-  //Error alerts
-
-  _errorAlert(action, isAutomatic) {
-    if (!isAutomatic)
-      Alert.alert(
-        `${action} Failed`,
-        "Something went wrong. Please try again later"
-      );
-  }
-
-  _successAlert(action, isAutomatic) {
-    if (!isAutomatic) Alert.alert("", `${action} Succesful`);
-  }
-
-  _noBackupAlert() {
-    Alert.alert("No Backup", "There is no backup associated with this account");
-  }
-
-  _userExistsWhenCreateError() {
-    Alert.alert(
-      "Create Account Failed",
-      "There is an account associated with this email"
-    );
-  }
-
-  _invalidVerificationCodeAlert() {
-    Alert.alert("Verification Failed", "The code you entered is incorrect");
-  }
-
-  _invalidUserNameOrPasswordAlert() {
-    Alert.alert(
-      "Login Failed",
-      "Your email or password is incorrect. Please try again"
-    );
   }
 }
 

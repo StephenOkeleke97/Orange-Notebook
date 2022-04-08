@@ -122,7 +122,8 @@ export default function CreateCategory({
         categoryName,
         () => {
           navigation.navigate("HomeLoggedIn");
-        }
+        },
+        3
       );
     }
   };

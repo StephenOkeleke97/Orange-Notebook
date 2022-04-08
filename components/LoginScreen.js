@@ -5,6 +5,7 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useState } from "react";
 import { Icon } from "react-native-elements";
@@ -31,18 +32,37 @@ export default function LoginScreen({ navigation }) {
     return null;
   }
 
-  const handleLogin = () => {
-    UserService.getTwoFactor(email, (enabled) => {
-      if (enabled) {
-        navigation.navigate("VerifyEmail", {
-          source: "Login",
-          email: email,
-        });
-      } else {
-        setUser(email, onSetUser);
-      }
-    });
+  const onSubmit = () => {
+    if (!validator.validate(email.trim())) {
+      setEmailIsError(true);
+    } else if (password === "") {
+      setPasswordIsError(true);
+    } else {
+      // UserService.login(email.trim(), password, handleLogin);
+      UserService.getTwoFactor(email.trim(), password, checkMfaSuccess, failure);
+    }
   };
+
+  const checkMfaSuccess = (enabled) => {
+    if (enabled) {
+      navigation.navigate("VerifyEmail", {
+        source: "Login",
+        email: email.trim(),
+        password: password,
+      });
+    } else {
+      UserService.login(email.trim(), password, null, loginSuccess, failure);
+    }
+  }
+
+  const loginSuccess = (data) => {
+    setUser(email.trim(), data.token, onSetUser);
+  }
+
+  const failure = (message = `Something went wrong. 
+  Please try again later`) => {
+    Alert.alert("Login Failed", message);
+  }
 
   const onSetUser = () => {
     navigation.navigate("HomeLoggedIn");
@@ -50,17 +70,6 @@ export default function LoginScreen({ navigation }) {
 
   const handleResetPassword = () => {
     navigation.navigate("ResetPassword");
-  };
-
-  const onSubmit = () => {
-    const pEmail = email.trim();
-    if (!validator.validate(pEmail)) {
-      setEmailIsError(true);
-    } else if (password === "") {
-      setPasswordIsError(true);
-    } else {
-      UserService.login(pEmail, password, handleLogin);
-    }
   };
 
   return (

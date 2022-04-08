@@ -3,8 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const db = SQLite.openDatabase("notes.db");
 
-export function setUser(email, success) {
+export function setUser(email, token, success) {
   addUserEmailToAsyncStorage(email);
+  addTokenToAsyncStorage(token);
   db.transaction((tx) => {
     tx.executeSql(
       "INSERT OR IGNORE INTO Users(UserEmail, BackupFrequency, " +
@@ -24,6 +25,14 @@ export function setUser(email, success) {
 async function addUserEmailToAsyncStorage(email) {
   try {
     await AsyncStorage.setItem("email", email);
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+async function addTokenToAsyncStorage(token) {
+  try {
+    await AsyncStorage.setItem("jwt", token);
   } catch (error) {
     console.log(error);
   }

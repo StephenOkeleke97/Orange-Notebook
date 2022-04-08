@@ -1,5 +1,7 @@
 import * as SQLite from "expo-sqlite";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as FileSystem from "expo-file-system";
+import { initializeDB } from "../db/SchemaScript";
 
 const db = SQLite.openDatabase("notes.db");
 
@@ -207,57 +209,26 @@ export function getLastBackUpSize(callback) {
   });
 }
 
-//*
-export function deleteUser(callback) {
-  getUser().then((user) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "DELETE FROM Users WHERE UserEmail = ?",
-        [user],
-        () => {
-          callback();
-        },
-        (t, error) => {
-          console.log(error);
-        }
-      );
+export function deleteUser(success) {
+  FileSystem.deleteAsync(FileSystem.documentDirectory + "SQLite/notes.db")
+    .then(() => {
+      initializeDB();
+      success();
+    })
+    .catch((error) => {
+      console.log(error);
     });
-  });
-}
-
-//*
-export function logOut(callback) {
-  getUser().then((user) => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        "UPDATE Users SET LoggedIn = 0 WHERE UserEmail = ?",
-        [user],
-        () => {
-          callback();
-        },
-        (t, error) => console.log(error)
-      );
-    });
-  });
 }
 
 export function checkIfLoggedIn(callback) {
-  db.transaction(tx => {
-    tx.executeSql("SELECT UserEmail from Users Limit 1", null, 
-    (t, {rows: { _array }}) => {
-      callback(_array.length > 0);
-    }, (t, error) => console.log("Error during check logged in", error));
-  });
-}
-
-//*
-export function saveLogIn(email) {
   db.transaction((tx) => {
     tx.executeSql(
-      "UPDATE Users SET LoggedIn = 1 WHERE UserEmail = ?",
-      [email],
+      "SELECT UserEmail from Users Limit 1",
       null,
-      (t, error) => console.log(error)
+      (t, { rows: { _array } }) => {
+        callback(_array.length > 0);
+      },
+      (t, error) => console.log("Error during check logged in", error)
     );
   });
 }
