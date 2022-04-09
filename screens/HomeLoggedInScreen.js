@@ -11,7 +11,7 @@ import {
   updateNextBackUpDate,
   setLastBackupDate,
   setLastBackupSize,
-} from "./settings";
+} from "../settings/settings";
 import UserService from "../services/UserService";
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";

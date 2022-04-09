@@ -6,7 +6,7 @@ export default function HomeScreen({ navigation }) {
     <View style={globalStyles.container}>
       <View style={styles.logoView}>
         <Image
-          source={require("../assets/notes.png")}
+          source={require("../assets/images/homeImage1.png")}
           style={styles.homeImage}
         />
       </View>
@@ -42,8 +42,8 @@ const styles = StyleSheet.create({
   },
 
   homeImage: {
-    width: 450,
-    height: 450,
+    width: 300,
+    height: 300,
     marginTop: 30,
   },
 

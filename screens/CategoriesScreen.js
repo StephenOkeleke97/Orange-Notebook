@@ -12,10 +12,10 @@ import {
 import { useEffect, useState } from "react";
 import React from "react";
 import { Icon } from "react-native-elements";
-import Category from "./Category.js";
+import Category from "../components/Category.js";
 import { useFocusEffect } from "@react-navigation/native";
-import CreateCategory from "./CreateCategory.js";
-import { deleteCategory, updateCategoryList } from "./queries.js";
+import CreateCategory from "../components/CreateCategory.js";
+import { deleteCategory, updateCategoryList } from "../db/queries.js";
 
 export default function CategoriesScreen({ navigation }) {
   const [filteredCategories, setFilteredCategories] = useState([]);
@@ -259,11 +259,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  homeImage: {
-    width: 35,
-    height: 35,
-  },
-
   titleText: {
     fontSize: 20,
     fontFamily: "LatoBold",
@@ -303,13 +298,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     paddingBottom: 15,
     paddingTop: 15,
-  },
-
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    width: "50%",
   },
 
   activeTabTitle: {

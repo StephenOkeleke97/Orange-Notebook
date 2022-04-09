@@ -5,11 +5,11 @@ import {
   Text,
   FlatList,
 } from "react-native";
-import CreateCategory from "./CreateCategory";
+import CreateCategory from "../components/CreateCategory";
 import React from "react";
 import { useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { selectCategories, updateNoteCategories } from "./queries";
+import { selectCategories, updateNoteCategories } from "../db/queries";
 
 export default function AddNoteToCategoryScreen({ route, navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -29,7 +29,7 @@ export default function AddNoteToCategoryScreen({ route, navigation }) {
       }
     });
     setCategories(array);
-  }
+  };
 
   const setModal = (modalVisible) => {
     setModalVisible(modalVisible);

@@ -1,5 +1,5 @@
 import { Text, View, TouchableOpacity, StyleSheet } from "react-native";
-import { Icon } from "react-native-elements/dist/icons/Icon";
+import { Icon } from "react-native-elements";
 import { useState, useEffect } from "react";
 
 export default function NoteCardSlim({

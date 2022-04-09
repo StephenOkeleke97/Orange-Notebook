@@ -1,26 +1,27 @@
-import CreateAccountScreen from "./components/CreateAccountScreen";
-import CreateNotesScreen from "./components/CreateNotesScreen";
-import HomeScreen from "./components/HomeScreen";
-import LoginScreen from "./components/LoginScreen";
-import VerifyEmailScreen from "./components/VerifyEmailScreen";
-import HomeLoggedInScreen from "./components/HomeLoggedInScreen";
-import AddNoteToCategoryScreen from "./components/AddNoteToCategoryScreen";
-import BackupSettingsScreen from "./components/BackupSettingsScreen";
-import BackupSettingsFrequency from "./components/BackupSettingsFrequency";
-import SettingsScreen from "./components/SettingsScreen";
-import CreateNewPasswordScreen from "./components/CreateNewPasswordScreen";
-import ResetPasswordScreen from "./components/ResetPasswordScreen";
+import CreateAccountScreen from "./screens/CreateAccountScreen";
+import CreateNotesScreen from "./screens/CreateNotesScreen";
+import HomeScreen from "./screens/HomeScreen";
+import LoginScreen from "./screens/LoginScreen";
+import VerifyEmailScreen from "./screens/VerifyEmailScreen";
+import HomeLoggedInScreen from "./screens/HomeLoggedInScreen";
+import AddNoteToCategoryScreen from "./screens/AddNoteToCategoryScreen";
+import BackupSettingsScreen from "./screens/BackupSettingsScreen";
+import BackupSettingsFrequency from "./screens/BackupSettingsFrequency";
+import SettingsScreen from "./screens/SettingsScreen";
+import CreateNewPasswordScreen from "./screens/CreateNewPasswordScreen";
+import ResetPasswordScreen from "./screens/ResetPasswordScreen";
+import PrivacyPolicy from "./screens/PrivacyPolicy";
+import NotesScreen from "./screens/NotesScreen";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { DefaultTheme } from "@react-navigation/native";
 import { useEffect, useState } from "react";
 import * as SQLite from "expo-sqlite";
-import NotesScreen from "./components/NotesScreen";
-import CurrentUser from "./services/CurrentUser";
-import { checkIfLoggedIn, initializeSettings } from "./components/settings";
+import { checkIfLoggedIn } from "./settings/settings";
 import { useFonts } from "expo-font";
-import * as FileSystem from "expo-file-system";
 import { dropTables, initializeDB } from "./db/SchemaScript";
+import { Asset } from "expo-asset";
+import AppLoading from "expo-app-loading";
 
 const db = SQLite.openDatabase("notes.db");
 
@@ -39,6 +40,7 @@ const MyTheme = {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   const handleCheckLoggedIn = (isLoggedIn) => {
     setIsLoggedIn(isLoggedIn);
@@ -48,13 +50,35 @@ export default function App() {
     checkIfLoggedIn(handleCheckLoggedIn);
   }, []);
 
-  const [loaded] = useFonts({
+  const [fontLoaded] = useFonts({
     LatoRegular: require("./assets/fonts/Lato-Regular.ttf"),
     LatoBold: require("./assets/fonts/Lato-Bold.ttf"),
+    OverpassBold: require("./assets/fonts/Overpass-Bold.ttf"),
+    Overpass: require("./assets/fonts/Overpass-Regular.ttf")
   });
 
-  if (!loaded) {
-    return null;
+  const cacheResources = async () => {
+    const images = [
+      require("./assets/images/notes.png"),
+      require("./assets/images/notes.png"),
+    ];
+    const cachedImages = images.map((image) => {
+      return Asset.fromModule(image).downloadAsync();
+    });
+
+    return Promise.all(cachedImages);
+  };
+
+  useEffect(() => {
+    const loadResources = async () => {
+      await cacheResources();
+      setIsLoaded(true);
+    };
+    loadResources();
+  }, []);
+
+  if (!isLoaded || !fontLoaded) {
+    return <AppLoading />;
   }
 
   return (
@@ -94,6 +118,7 @@ export default function App() {
           name="CreatePassword"
           component={CreateNewPasswordScreen}
         />
+        <Stack.Screen name="Privacy" component={PrivacyPolicy}/>
       </Stack.Navigator>
     </NavigationContainer>
   );

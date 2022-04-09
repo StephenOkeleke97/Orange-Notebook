@@ -4,12 +4,12 @@ import { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
-import NoteCardSlim from "./NoteCardSlim.js";
+import NoteCardSlim from "../components/NoteCardSlim.js";
 import {
   permanentDelete,
   restoreDeletedNotes,
   selectAllNotes,
-} from "./queries.js";
+} from "../db/queries.js";
 
 export default function TrashScreen() {
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -196,11 +196,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  homeImage: {
-    width: 35,
-    height: 35,
-  },
-
   titleText: {
     fontSize: 20,
     fontFamily: "LatoBold",
@@ -241,13 +236,6 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     paddingLeft: 15,
     paddingRight: 15,
-  },
-
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    width: "50%",
   },
 
   activeTabTitle: {

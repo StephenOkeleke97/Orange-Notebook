@@ -15,12 +15,12 @@ import {
   getTwoFactor,
   toggleTwoFactor,
   deleteUser,
-} from "./settings.js";
+} from "../settings/settings.js";
 import { useFocusEffect } from "@react-navigation/native";
 import UserService from "../services/UserService.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNetInfo } from "@react-native-community/netinfo";
-import Loading from "./Loading.js";
+import Loading from "../components/Loading.js";
 
 export default function SettingsScreen({ navigation }) {
   const netInfo = useNetInfo();
@@ -143,6 +143,10 @@ export default function SettingsScreen({ navigation }) {
     Alert.alert("Delete Account Failed", message);
   };
 
+  const openPrivacyPolicy = () => {
+    navigation.navigate("Privacy");
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.mainContainer}>
@@ -199,8 +203,9 @@ export default function SettingsScreen({ navigation }) {
             Delete Account
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.settingsComponent} activeOpacity={0.5}>
-          <Text style={styles.settingsText}>FAQ</Text>
+        <TouchableOpacity style={styles.settingsComponent} activeOpacity={0.5}
+        onPress={openPrivacyPolicy}>
+          <Text style={styles.settingsText}>Privacy Policy</Text>
           <Icon name="chevron-right" type="material-community" color="#000" />
         </TouchableOpacity>
       </View>

@@ -17,10 +17,11 @@ import {
   getLastBackUpSize,
   setLastBackupDate,
   setLastBackupSize,
-} from "./settings.js";
+  getBackupEnabled,
+  toggleBackupEnabled,
+} from "../settings/settings.js";
 import { Icon } from "react-native-elements";
 import { globalStyles } from "../styles/global";
-import { getBackupEnabled, toggleBackupEnabled } from "./settings.js";
 import UserService from "../services/UserService.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -40,7 +41,7 @@ const BackupSettingsScreen = ({ navigation }) => {
   useEffect(() => {
     return () => {
       isMounted.current = false;
-    }
+    };
   }, []);
 
   useEffect(() => {
@@ -89,8 +90,7 @@ const BackupSettingsScreen = ({ navigation }) => {
   };
 
   const updateProgress = (percent) => {
-    if (isMounted.current)
-      setProgressPercent(percent);
+    if (isMounted.current) setProgressPercent(percent);
   };
 
   /**

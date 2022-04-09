@@ -8,20 +8,20 @@ import {
   KeyboardAvoidingView,
   Keyboard,
 } from "react-native";
-import NoteCard from "./NoteCard.js";
+import NoteCard from "../components/NoteCard.js";
 import { useState, useEffect } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import React from "react";
 import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
-import { getDetailedDisplay } from "./settings.js";
-import NoteCardSlim from "./NoteCardSlim.js";
+import { getDetailedDisplay } from "../settings/settings.js";
+import NoteCardSlim from "../components/NoteCardSlim.js";
 import {
   deleteNotes,
   pinNotes,
   selectAllNotes,
   selectNotesOfCategory,
-} from "./queries.js";
+} from "../db/queries.js";
 
 export default function NotesScreen({ navigation, route }) {
   const [filteredNotes, setFilteredNotes] = useState([]);
@@ -454,31 +454,9 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
 
-  navTab: {
-    alignItems: "flex-end",
-    justifyContent: "center",
-  },
-
-  backgroundView: {
-    flexDirection: "row",
-    padding: 6,
-    justifyContent: "space-between",
-    borderRadius: 20,
-    backgroundColor: "#F1F2F2",
-    width: "50%",
-    height: "83%",
-  },
-
   filter: {
     flexDirection: "row",
     paddingBottom: 15,
-  },
-
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    width: "50%",
   },
 
   activeTabTitle: {
@@ -486,11 +464,6 @@ const styles = StyleSheet.create({
     paddingLeft: 5,
     paddingRight: 5,
     marginRight: 10,
-  },
-
-  homeImage: {
-    width: 35,
-    height: 35,
   },
 
   headerIcon: {

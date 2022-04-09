@@ -4,7 +4,7 @@ import { Icon } from "react-native-elements";
 import { useState } from "react";
 import UserService from "../services/UserService";
 import { setUser } from "../services/CurrentUser";
-import Loading from "./Loading";
+import Loading from "../components/Loading";
 
 export default function VerifyEmailScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);

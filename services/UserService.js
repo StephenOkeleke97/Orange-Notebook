@@ -2,8 +2,7 @@ import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { FileSystemSessionType } from "expo-file-system";
 import * as SQLite from "expo-sqlite";
-import { Alert } from "react-native";
-import { setLastBackupDate, setLastBackupSize } from "../components/settings";
+import { setLastBackupDate, setLastBackupSize } from "../settings/settings";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const rawHost = "http://192.168.1.100:8080/";

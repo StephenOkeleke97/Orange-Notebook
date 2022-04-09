@@ -10,7 +10,7 @@ import {
 import { useState } from "react";
 import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
-import { createNewNote, editNote } from "./queries.js";
+import { createNewNote, editNote } from "../db/queries.js";
 
 export default function CreateNotesScreen({ navigation, route }) {
   const d = new Date();

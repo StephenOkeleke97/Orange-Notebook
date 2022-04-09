@@ -10,9 +10,9 @@ import { useState } from "react";
 import { Icon } from "react-native-elements";
 import { useFonts } from "expo-font";
 import { globalStyles } from "../styles/global.js";
-import { HideKeyboard } from "./HideKeyboard.js";
+import { HideKeyboard } from "../components/HideKeyboard.js";
 import UserService from "../services/UserService.js";
-import Loading from "./Loading.js";
+import Loading from "../components/Loading.js";
 
 export default function CreateAccountScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -46,15 +46,17 @@ export default function CreateAccountScreen({ navigation }) {
     navigation.navigate("VerifyEmail", {
       source: "Register",
       email: email.trim(),
-      password: password
+      password: password,
     });
-  }
+  };
 
-  const failure = (message = `Something went wrong. 
-  Please try again later`) => {
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
     setLoading(false);
     Alert.alert("Create Account Failed", message);
-  }
+  };
 
   return (
     <HideKeyboard>
@@ -157,14 +159,6 @@ const styles = StyleSheet.create({
 
   closeIcon: {
     paddingLeft: 20,
-  },
-
-  registerLaterText: {
-    paddingRight: 20,
-    color: "#808285",
-    fontWeight: "500",
-    fontFamily: "LatoRegular",
-    fontSize: 16,
   },
 
   loginPageHeader: {

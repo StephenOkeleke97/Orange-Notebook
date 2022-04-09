@@ -2,7 +2,7 @@ import { StyleSheet, View, TouchableOpacity, Text } from "react-native";
 import { Icon } from "react-native-elements";
 import React, { useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
-import { setBackupFrequency, getBackupFrequency } from "./settings";
+import { setBackupFrequency, getBackupFrequency } from "../settings/settings";
 import { globalStyles } from "../styles/global";
 
 const BackupSettingsFrequency = ({ navigation }) => {

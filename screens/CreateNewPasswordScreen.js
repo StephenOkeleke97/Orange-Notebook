@@ -12,7 +12,7 @@ import {
 import { Icon } from "react-native-elements";
 import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
-import Loading from "./Loading";
+import Loading from "../components/Loading";
 
 const CreateNewPasswordScreen = ({ navigation, route }) => {
   const { email, code } = route.params;
@@ -167,11 +167,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-  },
-
-  backButtonText: {
-    marginLeft: 5,
-    fontWeight: "500",
   },
 
   headerContainer: {

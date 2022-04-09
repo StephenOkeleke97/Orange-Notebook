@@ -9,12 +9,11 @@ import {
 } from "react-native";
 import { useState } from "react";
 import { Icon } from "react-native-elements";
-import { useFonts } from "expo-font";
 import { globalStyles } from "../styles/global.js";
-import { HideKeyboard } from "./HideKeyboard.js";
+import { HideKeyboard } from "../components/HideKeyboard.js";
 import UserService from "../services/UserService.js";
 import { setUser } from "../services/CurrentUser.js";
-import Loading from "./Loading.js";
+import Loading from "../components/Loading.js";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -24,11 +23,6 @@ export default function LoginScreen({ navigation }) {
   const [emailIsError, setEmailIsError] = useState(false);
   const [passwordIsError, setPasswordIsError] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  useFonts({
-    LatoRegular: require("../assets/fonts/Lato-Regular.ttf"),
-    LatoBold: require("../assets/fonts/Lato-Bold.ttf"),
-  });
 
   const onSubmit = () => {
     if (!validator.validate(email.trim())) {
@@ -52,22 +46,24 @@ export default function LoginScreen({ navigation }) {
     } else {
       UserService.login(email.trim(), password, null, loginSuccess, failure);
     }
-  }
+  };
 
   const loginSuccess = (data) => {
     setUser(email.trim(), data.token, onSetUser);
-  }
+  };
 
-  const failure = (message = `Something went wrong. 
-  Please try again later`) => {
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
     setLoading(false);
     Alert.alert("Login Failed", message);
-  }
+  };
 
   const onSetUser = () => {
     setLoading(false);
     navigation.navigate("HomeLoggedIn");
-  }
+  };
 
   const handleResetPassword = () => {
     navigation.navigate("ResetPassword");
@@ -157,7 +153,7 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.separator} />
         </View>
         <StatusBar style="auto" />
-       {loading && <Loading/>}
+        {loading && <Loading />}
       </View>
     </HideKeyboard>
   );
@@ -174,14 +170,6 @@ const styles = StyleSheet.create({
 
   closeIcon: {
     paddingLeft: 20,
-  },
-
-  registerLaterText: {
-    paddingRight: 20,
-    color: "#808285",
-    fontWeight: "500",
-    fontFamily: "LatoRegular",
-    fontSize: 16,
   },
 
   loginPageHeader: {
