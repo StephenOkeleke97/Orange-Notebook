@@ -17,18 +17,52 @@ import { useFocusEffect } from "@react-navigation/native";
 import CreateCategory from "../components/CreateCategory.js";
 import { deleteCategory, updateCategoryList } from "../db/queries.js";
 
+/**
+ * Screen for displaying categories.
+ *
+ * @param {Object} navigation navigation object
+ * @returns CategoriesScreen component
+ */
 export default function CategoriesScreen({ navigation }) {
+  /**
+   * Array representing filtered categories.
+   * Filtered when user types into the search box.
+   */
   const [filteredCategories, setFilteredCategories] = useState([]);
+  /**
+   * Text that filteres category list.
+   */
   const [searchedText, setSearchedText] = useState("");
+  /**
+   * Show edit/ filter category modal.
+   */
   const [modalVisible, setModalVisible] = useState(false);
   const [createMode, setCreateMode] = useState(true);
+  /**
+   * Indicates select mode. When active multiple categories,
+   * can be selected.
+   */
   const [selectMode, setSelectMode] = useState(false);
   const [selectedCategories, setSelectedCategories] = useState([]);
+  /**
+   * Changing this triggers a rerender to reflect an
+   * updated component.
+   */
   const [reRenderOnSelect, setReRenderOnSelect] = useState(false);
+  /**
+   * Indicates whether or not a category is selected.
+   */
   const [selected, setSelected] = useState(false);
+  /**
+   * Select all categories.
+   */
   const [triggerSelectAll, setTriggerSelectAll] = useState(false);
+
   const keyboardVerticalOffset = Platform.OS === "ios" ? 100 : 0;
 
+  /**
+   * Reset variables on focus.
+   */
   useFocusEffect(
     React.useCallback(() => {
       setSearchedText("");
@@ -39,10 +73,20 @@ export default function CategoriesScreen({ navigation }) {
     }, [])
   );
 
+  /**
+   * Get category list to reflect
+   * searched category.
+   */
   useEffect(() => {
     updateCategoryList(updateCategoryListCallback);
   }, [searchedText, modalVisible]);
 
+  /**
+   * Callback to handle result of database
+   * query.
+   *
+   * @param {array} array filtered category
+   */
   const updateCategoryListCallback = (array) => {
     setFilteredCategories(
       array.filter((categories) =>
@@ -51,13 +95,23 @@ export default function CategoriesScreen({ navigation }) {
         )
       )
     );
-  }
+  };
 
+  /**
+   * Add category to selected categories.
+   *
+   * @param {string} categoryName name of category to be added
+   */
   const addToSelectedCategories = (categoryName) => {
     selectedCategories.push(categoryName);
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Remove category to selected categories.
+   *
+   * @param {string} categoryName name of category to be removed
+   */
   const removeFromSelectedCategories = (categoryName) => {
     const index = selectedCategories.indexOf(categoryName);
     if (index > -1) {
@@ -66,19 +120,23 @@ export default function CategoriesScreen({ navigation }) {
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Delete selected categories.
+   */
   const deleteSelectedCategories = () => {
     if (selectedCategories.length > 0) {
-      deleteCategory(
-        selectedCategories,
-        () => {
-          updateCategoryList(updateCategoryListCallback);
-        }
-      );
+      deleteCategory(selectedCategories, () => {
+        updateCategoryList(updateCategoryListCallback);
+      });
     }
     setSelectMode(!selectMode);
     setSelectedCategories([]);
   };
 
+  /**
+   * Edit category. Only one can be edited
+   * at a time.
+   */
   const handleEdit = () => {
     if (selectedCategories.length !== 1) {
       alert("Please select exactly one category");
@@ -107,6 +165,9 @@ export default function CategoriesScreen({ navigation }) {
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Select all categories.
+   */
   const selectAll = () => {
     setSelected(true);
     setTriggerSelectAll(!triggerSelectAll);
@@ -120,6 +181,12 @@ export default function CategoriesScreen({ navigation }) {
     return selected;
   };
 
+  /**
+   * Render category component in flatlist.
+   *
+   * @param {Object} item category
+   * @returns
+   */
   const renderItem = ({ item }) => (
     <Category
       name={item.CategoryName}

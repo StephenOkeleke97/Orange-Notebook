@@ -25,31 +25,70 @@ import { globalStyles } from "../styles/global";
 import UserService from "../services/UserService.js";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+/**
+ * Screen for handling Backup interactions.
+ * 
+ * @param {Object} navigation navigation object 
+ * @returns BackupSettingsScreen component
+ */
 const BackupSettingsScreen = ({ navigation }) => {
   const [rotateAnimation, setRotateAnimation] = useState(new Animated.Value(0));
+  /**
+   * Boolean to indicate when a backup action (backup, restore and delete)
+   * is in progress. Useful for animating the progress icon.
+   */
   const [backupInProgress, setBackupInProgress] = useState(false);
   const [backupFrequencyLabel, setBackupFrequencyLabel] = useState("Daily");
+  /**
+   * Variable to hold the date of last Backup
+   */
   const [lastDate, setLastDate] = useState("");
+  /**
+   * Variable to hold the size of last Backup
+   */
   const [lastSize, setLastSize] = useState(0);
+  /**
+   * Indicate the progress when uploading or downloading a backup.
+   */
   const [progressPercent, setProgressPercent] = useState(0 + " %");
+  /**
+   * Used by switch component to indicate whether
+   * or not auto backup is enabled. 
+   */
   const [backupEnabled, setBackupEnabled] = useState(false);
+
   const [userEmail, setUserEmail] = useState("");
 
+  /**
+   * Grey out button to BackupSettingsFrequency screen
+   * if auto backup is disabled.
+   */
   const backupFrequencyActiveOpacity = backupEnabled ? 0.3 : 1;
   let isMounted = useRef(true);
 
+  /**
+   * Keep track of component mount status to prevent
+   * updating an unmounted component.
+   */
   useEffect(() => {
     return () => {
       isMounted.current = false;
     };
   }, []);
 
+  /**
+   * Get user email from AsyncStorage when component
+   * is loaded.
+   */
   useEffect(() => {
     getUser().then((user) => {
       setUserEmail(user);
     });
   }, [userEmail]);
 
+  /**
+   * Get last back up date and size on focus.
+   */
   useFocusEffect(
     React.useCallback(() => {
       getBackupEnabled(setBackupEnabledCallBack);
@@ -66,11 +105,20 @@ const BackupSettingsScreen = ({ navigation }) => {
     })
   );
 
+  /**
+   * Start or stop animation when backup status
+   * changes.
+   */
   useEffect(() => {
     if (backupInProgress) startImageRotateFunction();
     else rotateAnimation.stopAnimation();
   }, [backupInProgress]);
 
+  /**
+   * Get user email.
+   * 
+   * @returns promise that returns user when fulfilled
+   */
   const getUser = async () => {
     let user;
     try {
@@ -81,14 +129,29 @@ const BackupSettingsScreen = ({ navigation }) => {
     return user;
   };
 
+  /**
+   * Callback to trigger switch when backup is
+   * successfully enabled.
+   * 
+   * @param {boolean} bool true if backup is enabled or false otherwise
+   */
   const setBackupEnabledCallBack = (bool) => {
     setBackupEnabled(bool);
   };
 
+  /**
+   * Toggle backup setting in database.
+   */
   const toggleBackUp = () => {
     toggleBackupEnabled(setBackupEnabledCallBack);
   };
 
+  /**
+   * Update progress of backup download or upload
+   * to server.
+   * 
+   * @param {int} percent percent completed
+   */
   const updateProgress = (percent) => {
     if (isMounted.current) setProgressPercent(percent);
   };
@@ -114,6 +177,10 @@ const BackupSettingsScreen = ({ navigation }) => {
     Alert.alert(`${action} Failed`, message);
   };
 
+  /**
+   * Backup database to server.
+   * Triggers a confirmation.
+   */
   const handleBackUpToServer = () => {
     Alert.alert(
       "Back Up Notes",
@@ -141,6 +208,10 @@ const BackupSettingsScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Update last back up date and size after successful
+   * backup, delete or restore.
+   */
   const updateLastDateAndSize = () => {
     UserService.getLastBackUpInfo((data) => {
       const date = parseDateFromServer(data.date);
@@ -150,6 +221,12 @@ const BackupSettingsScreen = ({ navigation }) => {
     });
   };
 
+  /**
+   * Parse date into desired format: yyyy-MM-dd hh:mm:ss
+   * 
+   * @param {Date} date date to be parsed
+   * @returns parsed date
+   */
   const parseDateFromServer = (date) => {
     let temp = new Date(Date.parse(date));
     const parsedDate = `${temp.getFullYear()}-${
@@ -158,6 +235,11 @@ const BackupSettingsScreen = ({ navigation }) => {
     return parsedDate;
   };
 
+  /**
+   * Restore backup from server. Action runs
+   * in the background. 
+   * Triggers confirmation.
+   */
   const handleRestoreFromServer = () => {
     Alert.alert(
       "Restore Backup",
@@ -186,6 +268,10 @@ const BackupSettingsScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Delete backup from server.
+   * Triggers confirmation.
+   */
   const handleDeleteFromServer = () => {
     Alert.alert(
       "Delete Backup",
@@ -214,12 +300,18 @@ const BackupSettingsScreen = ({ navigation }) => {
     navigation.goBack();
   };
 
+  /**
+   * Navigate to BackupSettingsFrequency Screen.
+   */
   const handleSelectFrequency = () => {
     if (backupEnabled) {
       navigation.navigate("BackupFrequency");
     }
   };
 
+  /**
+   * Start animation of backup progress icon.
+   */
   const startImageRotateFunction = () => {
     rotateAnimation.setValue(0);
     Animated.timing(rotateAnimation, {

@@ -14,12 +14,21 @@ import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
 import Loading from "../components/Loading";
 
+/**
+ * Screen representing reset password interactions.
+ *
+ * @param {Object} navigation navigation object
+ * @returns ResetPasswordScreen
+ */
 const ResetPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [emailIsError, setEmailIsError] = useState(false);
   const validator = require("email-validator");
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Request verification token.
+   */
   const handleNavigateToVerify = () => {
     if (validator.validate(email.trim())) {
       setLoading(true);
@@ -29,6 +38,10 @@ const ResetPasswordScreen = ({ navigation }) => {
     }
   };
 
+  /**
+   * Navigate to verify email screen if token
+   * is successfully received.
+   */
   const requestCodeSuccessful = () => {
     setLoading(false);
     navigation.navigate("VerifyEmail", {

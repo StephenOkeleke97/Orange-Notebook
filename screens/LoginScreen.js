@@ -15,15 +15,31 @@ import UserService from "../services/UserService.js";
 import { setUser } from "../services/CurrentUser.js";
 import Loading from "../components/Loading.js";
 
+/**
+ * Screen to handle login interaction.
+ *
+ * @param {Object} navigation navigation object
+ * @returns
+ */
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const validator = require("email-validator");
   const [passwordVisible, setPasswordVisible] = useState(false);
+  /**
+   * Indicates when there is an error in the email
+   * format.
+   */
   const [emailIsError, setEmailIsError] = useState(false);
+  /**
+   * Indicates when the password is empty.
+   */
   const [passwordIsError, setPasswordIsError] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Check if Multi Factor Authentication is enabled.
+   */
   const onSubmit = () => {
     if (!validator.validate(email.trim())) {
       setEmailIsError(true);
@@ -35,6 +51,13 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  /**
+   * MFA check callback. If MFA is enabled,
+   * navigate to the verify email screen. Otherwise,
+   * Login User.
+   *
+   * @param {boolean} enabled true if mfa enabled or false otherwise
+   */
   const checkMfaSuccess = (enabled) => {
     if (enabled) {
       setLoading(false);
@@ -48,6 +71,12 @@ export default function LoginScreen({ navigation }) {
     }
   };
 
+  /**
+   * Handle successful login. Store usercredentials
+   * and authentication token.
+   *
+   * @param {Object} data object containing jwt token
+   */
   const loginSuccess = (data) => {
     setUser(email.trim(), data.token, onSetUser);
   };
@@ -60,6 +89,11 @@ export default function LoginScreen({ navigation }) {
     Alert.alert("Login Failed", message);
   };
 
+  /**
+   * Callback called after the user credentials
+   * are stored successfully. Navigate to the
+   * HomeLoggedIn screen.
+   */
   const onSetUser = () => {
     setLoading(false);
     navigation.navigate("HomeLoggedIn");

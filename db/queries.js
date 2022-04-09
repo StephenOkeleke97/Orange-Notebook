@@ -2,6 +2,12 @@ import * as SQLite from "expo-sqlite";
 
 const db = SQLite.openDatabase("notes.db");
 
+/**
+ * Get list of categories in database.
+ *
+ * @param {function} selectCategoriesCallback callback
+ * in which result is passed to
+ */
 export function selectCategories(selectCategoriesCallback) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -15,6 +21,16 @@ export function selectCategories(selectCategoriesCallback) {
   });
 }
 
+/**
+ * Create new category.
+ *
+ * @param {string} name category name
+ * @param {int} red red component of rgb color
+ * @param {int} green green component of rgb color
+ * @param {int} blue blue component of rgb color
+ * @param {int} updateNotesCallBack callback called to move
+ * notes into new category if category was created with indirectly
+ */
 export function createCategory(name, red, green, blue, updateNotesCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -38,10 +54,10 @@ export function createCategory(name, red, green, blue, updateNotesCallBack) {
  * over. The number of retries indicates how many times
  * the method should be called when that happens.
  *
- * @param {*} notes notes to be updated
- * @param {*} categoryName new category name
- * @param {*} navigationCallback function called after completion
- * @param {*} retries number of retries after error
+ * @param {array} notes notes to be updated
+ * @param {string} categoryName new category name
+ * @param {function} navigationCallback function called after completion
+ * @param {function} retries number of retries after error
  */
 export function updateNoteCategories(
   notes,
@@ -74,6 +90,15 @@ export function updateNoteCategories(
   }
 }
 
+/**
+ * Edit category.
+ *
+ * @param {string} name new category name
+ * @param {int} red new red component of rgb color
+ * @param {int} green new green component of rgb color
+ * @param {int} blue new blue component of rgb color
+ * @param {string} oldName old category name
+ */
 export function editCategory(name, red, green, blue, oldName) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -88,6 +113,13 @@ export function editCategory(name, red, green, blue, oldName) {
   });
 }
 
+/**
+ * Delete category.
+ *
+ * @param {array} selectedCategories list of categories to be deleted
+ * @param {function} deleteCategoryCallBack callback called after category
+ * is deleted successfully
+ */
 export function deleteCategory(selectedCategories, deleteCategoryCallBack) {
   selectedCategories.forEach((categoryName) => {
     db.transaction((tx) => {
@@ -116,6 +148,12 @@ export function deleteCategory(selectedCategories, deleteCategoryCallBack) {
   });
 }
 
+/**
+ * Selects categories and the number of notes in category.
+ *
+ * @param {function} updateCallback callback called after category
+ * retrieved.
+ */
 export function updateCategoryList(updateCallback) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -133,6 +171,15 @@ export function updateCategoryList(updateCallback) {
   });
 }
 
+/**
+ * Edit a note.
+ *
+ * @param {string} titleText new title
+ * @param {string} labelText new label
+ * @param {string} contentText new content
+ * @param {date} date date of edit
+ * @param {int} id note id
+ */
 export function editNote(titleText, labelText, contentText, date, id) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -144,6 +191,16 @@ export function editNote(titleText, labelText, contentText, date, id) {
   });
 }
 
+/**
+ * Create note.
+ *
+ * @param {string} titleText title of note
+ * @param {string} category note category (none by default)
+ * @param {string} labelText note label
+ * @param {string} contentText note content
+ * @param {date} date date of creation
+ * @param {long} time time stamp when note created
+ */
 export function createNewNote(
   titleText,
   category,
@@ -163,6 +220,14 @@ export function createNewNote(
   });
 }
 
+/**
+ * Get notes.
+ *
+ * @param {boolean} deleted set to true to obtain deleted notes
+ * @param {boolean} pinned set to true to obtain pinned notes
+ * @param {function} allNoteCallback callback called after notes retrieved
+ * successfully
+ */
 export function selectAllNotes(deleted, pinned, allNoteCallback) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -178,6 +243,13 @@ export function selectAllNotes(deleted, pinned, allNoteCallback) {
   });
 }
 
+/**
+ * Get notes of a certain category.
+ *
+ * @param {boolean} pinned set to true to retrieve pinned notes
+ * @param {string} category category to look up
+ * @param {function} noteCategoryCallback callback called after notes retrieved
+ */
 export function selectNotesOfCategory(pinned, category, noteCategoryCallback) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -193,6 +265,11 @@ export function selectNotesOfCategory(pinned, category, noteCategoryCallback) {
   });
 }
 
+/**
+ * Move notes to recycle bin.
+ *
+ * @param {array} selectedNotes notes to be temporarily deleted.
+ */
 export function deleteNotes(selectedNotes) {
   selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
@@ -207,6 +284,11 @@ export function deleteNotes(selectedNotes) {
   });
 }
 
+/**
+ * Restore deleted notes.
+ *
+ * @param {array} selectedNotes notes to be restored
+ */
 export function restoreDeletedNotes(selectedNotes) {
   selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
@@ -220,6 +302,12 @@ export function restoreDeletedNotes(selectedNotes) {
   });
 }
 
+/**
+ * Pin or unpin notes.
+ *
+ * @param {array} selectedNotes notes to be pinned or unpinned
+ * @param {boolean} pinned set to true to pin or false to unpin
+ */
 export function pinNotes(selectedNotes, pinned) {
   selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
@@ -233,6 +321,12 @@ export function pinNotes(selectedNotes, pinned) {
   });
 }
 
+/**
+ * Permanently remove notes from database.
+ *
+ * @param {function} selectedNotes callback called on
+ * successful delete
+ */
 export function permanentDelete(selectedNotes) {
   selectedNotes.forEach((noteID) => {
     db.transaction((tx) => {
@@ -246,6 +340,13 @@ export function permanentDelete(selectedNotes) {
   });
 }
 
+/**
+ * Enable or disable two factor authentication in database.
+ * This is called when the two factor setting from the server
+ * is synced with the local db.
+ *
+ * @param {boolean} isEnabled true to enable and false to disable
+ */
 export function setTwoFactor(isEnabled) {
   db.transaction((tx) => {
     tx.executeSql(

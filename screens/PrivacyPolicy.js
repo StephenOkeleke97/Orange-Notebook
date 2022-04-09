@@ -11,6 +11,12 @@ import {
 import { Icon } from "react-native-elements";
 import { globalStyles } from "../styles/global";
 
+/**
+ * Screen to display privacy policy.
+ *
+ * @param {Object} navigation navigation object
+ * @returns PrivacyPolicy screen
+ */
 const PrivacyPolicy = ({ navigation }) => {
   const handleOpenLink = async () => {
     const url = "https://expo.dev/privacy";

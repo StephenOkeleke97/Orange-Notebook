@@ -9,6 +9,12 @@ var detailedDisplay;
 var backupEnabled;
 var twoFactor;
 
+/**
+ * Get detailed display setting from database.
+ *
+ * @param {function} setDetailEnabledCallBack callback to be called
+ * after detail retrieved
+ */
 export function getDetailedDisplay(setDetailEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -23,6 +29,12 @@ export function getDetailedDisplay(setDetailEnabledCallBack) {
   });
 }
 
+/**
+ * Toggle detailed display setting.
+ *
+ * @param {function} setDetailEnabledCallBack callback called
+ * after setting toggled in database
+ */
 export function toggleDetailedDisplay(setDetailEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -36,6 +48,12 @@ export function toggleDetailedDisplay(setDetailEnabledCallBack) {
   });
 }
 
+/**
+ * Get auto backup setting from database.
+ *
+ * @param {function} setBackupEnabledCallBack callback to be called
+ * after setting retrieved
+ */
 export function getBackupEnabled(setBackupEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -50,6 +68,12 @@ export function getBackupEnabled(setBackupEnabledCallBack) {
   });
 }
 
+/**
+ * Toggle auto backup setting in database.
+ *
+ * @param {function} setBackupEnabledCallBack callback to be called
+ * after setting toggled
+ */
 export function toggleBackupEnabled(setBackupEnabledCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -63,6 +87,13 @@ export function toggleBackupEnabled(setBackupEnabledCallBack) {
   });
 }
 
+/**
+ * Get two factor authentication setting
+ * from database.
+ *
+ * @param {function} setTwoFactorCallBack callback called
+ * after setting retrieved
+ */
 export function getTwoFactor(setTwoFactorCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -77,58 +108,37 @@ export function getTwoFactor(setTwoFactorCallBack) {
   });
 }
 
+/**
+ * Toggle two factor authentication setting in
+ * database.
+ *
+ * @param {function} setTwoFactorCallBack callback called after
+ * setting is toggled
+ * @param {function} syncWithServerCallBack callback to post updated setting
+ * to server
+ */
 export function toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack) {
-  unSyncWhenUpdateLocally(() => {
-    db.transaction((tx) => {
-      tx.executeSql(
-        'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "TwoFactor"',
-        [!twoFactor],
-        () => {
-          setTwoFactorCallBack(!twoFactor);
-          syncWithServerCallBack(!twoFactor);
-        },
-        (t, error) => console.log(error)
-      );
-    });
-  });
-}
-
-function unSyncWhenUpdateLocally(toggleTwoFactorCallBack) {
   db.transaction((tx) => {
     tx.executeSql(
-      'UPDATE Settings SET SettingSynced = "0.0" ' +
-        'AND SettingName = "TwoFactor"',
-      null,
-      (t, success) => toggleTwoFactorCallBack(),
-      (t, error) => console.log(error)
-    );
-  });
-}
-
-export function syncWithLocalDB() {
-  db.transaction((tx) => {
-    tx.executeSql(
-      'UPDATE Settings SET SettingSynced = "1.0"',
-      null,
-      null,
-      (t, error) => console.log(error)
-    );
-  });
-}
-
-export function getSyncStatus(success) {
-  db.transaction((tx) => {
-    tx.executeSql(
-      "SELECT SettingSynced FROM Settings WHERE SettingName = 'TwoFactor'",
-      null,
-      (t, { rows: { _array } }) => {
-        success(_array[0].SettingSynced);
+      'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "TwoFactor"',
+      [!twoFactor],
+      () => {
+        setTwoFactorCallBack(!twoFactor);
+        syncWithServerCallBack(!twoFactor);
       },
       (t, error) => console.log(error)
     );
   });
 }
 
+/**
+ * Set frequency of automatic backups.
+ * Three options available: Daily, Weekly, Monthly.
+ * 
+ * @param {string} frequency auto backup frequency
+ * @param {function} callback callback called after setting
+ * set successfully
+ */
 export function setBackupFrequency(frequency, callback) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -142,6 +152,12 @@ export function setBackupFrequency(frequency, callback) {
   });
 }
 
+/**
+ * Get frequency of automatic backups.
+ * 
+ * @param {function} callback callback called after 
+ * setting retrieved successfully
+ */
 export function getBackupFrequency(callback) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -155,6 +171,11 @@ export function getBackupFrequency(callback) {
   });
 }
 
+/**
+ * Set date of last back up.
+ * 
+ * @param {string} date formatted date
+ */
 export function setLastBackupDate(date) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -168,6 +189,12 @@ export function setLastBackupDate(date) {
   });
 }
 
+/**
+ * Get date of last backup.
+ * 
+ * @param {function} callback callback called
+ * after date is retrieved successfully
+ */
 export function getLastBackUpDate(callback) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -182,6 +209,11 @@ export function getLastBackUpDate(callback) {
   });
 }
 
+/**
+ * Set the size of last back up in bytes.
+ * 
+ * @param {int} size size of last back up
+ */
 export function setLastBackupSize(size) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -195,6 +227,12 @@ export function setLastBackupSize(size) {
   });
 }
 
+/**
+ * Get the size of last back up.
+ * 
+ * @param {function} callback callback called
+ * after size is retrieved
+ */
 export function getLastBackUpSize(callback) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -209,23 +247,36 @@ export function getLastBackUpSize(callback) {
   });
 }
 
+/**
+ * Delete local database and recreate schema.
+ * 
+ * @param {function} success callback called after
+ * database successfully deleted
+ */
 export function deleteUser(success) {
   FileSystem.deleteAsync(FileSystem.documentDirectory + "SQLite/notes.db")
     .then(() => {
       initializeDB();
       AsyncStorage.clear()
-      .then(() => {
-        success();
-      })
-      .catch(error => {
-        console.log(error);
-      })
+        .then(() => {
+          success();
+        })
+        .catch((error) => {
+          console.log(error);
+        });
     })
     .catch((error) => {
       console.log(error);
     });
 }
 
+/**
+ * Check size of user table to find out if
+ * user exists. Return size > 0 to callback.
+ * 
+ * @param {function} callback callback to receive 
+ * result
+ */
 export function checkIfLoggedIn(callback) {
   db.transaction((tx) => {
     tx.executeSql(
@@ -239,6 +290,11 @@ export function checkIfLoggedIn(callback) {
   });
 }
 
+/**
+ * Get date of next scheduled back up.
+ * 
+ * @param {function} callback callback to receive date
+ */
 export function getNextBackUpDate(callback) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -256,6 +312,11 @@ export function getNextBackUpDate(callback) {
   });
 }
 
+/**
+ * Set the date of next back up in epoch time.
+ * 
+ * @param {long} dateInEpoch date in epoch time
+ */
 export function updateNextBackUpDate(dateInEpoch) {
   getUser().then((user) => {
     db.transaction((tx) => {
@@ -269,6 +330,11 @@ export function updateNextBackUpDate(dateInEpoch) {
   });
 }
 
+/**
+ * Retrieve email of logged in user from AsyncStorage.
+ *  
+ * @returns promise which returns a user when fulfilled
+ */
 async function getUser() {
   let user;
   try {

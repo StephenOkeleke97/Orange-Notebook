@@ -6,6 +6,15 @@ import UserService from "../services/UserService";
 import { setUser } from "../services/CurrentUser";
 import Loading from "../components/Loading";
 
+/**
+ * Verify Email Screen. This Screen is
+ * utilized by 3 components. Login, Register and
+ * Reset password. As such, a source parameter is required.
+ *
+ * @param {Object} navigation navigation object
+ * @param {Object} route route object
+ * @returns VerifyEmailScreen
+ */
 export default function VerifyEmailScreen({ navigation, route }) {
   const [loading, setLoading] = useState(false);
   const { email, password } = route.params;
@@ -23,6 +32,12 @@ export default function VerifyEmailScreen({ navigation, route }) {
   const [nextNum, setNextNum] = useState(1);
   const [errorText, setErrorText] = useState("");
 
+  /**
+   * Write to custom keypad.
+   *
+   * @param {int} next next key pad box
+   * @param {int} num number to write
+   */
   const setNum = (next, num) => {
     if (next === 1) {
       setNum1(num);
@@ -43,6 +58,9 @@ export default function VerifyEmailScreen({ navigation, route }) {
     }
   };
 
+  /**
+   * Delete from custom keybad
+   */
   const deleteNum = () => {
     if (currentNum === 1) {
       setNum1("");
@@ -71,6 +89,9 @@ export default function VerifyEmailScreen({ navigation, route }) {
     }
   };
 
+  /**
+   * Handle submit action based on source.
+   */
   const handleSubmit = () => {
     const source = route.params.source;
 
@@ -83,6 +104,10 @@ export default function VerifyEmailScreen({ navigation, route }) {
     }
   };
 
+  /**
+   * Object holding functions to handle actions
+   * of the 3 sources: login, register and reset password.
+   */
   const verifyFunctionWrapper = {
     login: {
       onSubmit: function () {
@@ -141,7 +166,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
         );
         navigation.reset({
           index: 0,
-          routes: [{name: 'Home'}],
+          routes: [{ name: "Home" }],
         });
       },
 
@@ -155,6 +180,9 @@ export default function VerifyEmailScreen({ navigation, route }) {
     },
   };
 
+  /**
+   * Request new verification code.
+   */
   const handleRequestCode = () => {
     setLoading(true);
     UserService.requestCode(email, tokenRequestSuccessful, failure);
