@@ -6,11 +6,16 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useState, useEffect } from "react";
 import React from "react";
 import { Icon } from "react-native-elements";
-import { createCategory, updateNoteCategories, editCategory } from "./queries";
+import {
+  createCategory,
+  updateNoteCategories,
+  editCategory,
+} from "../db/queries";
 
 export default function CreateCategory({
   modalVisible,
@@ -82,7 +87,7 @@ export default function CreateCategory({
 
   const saveCategory = () => {
     if (categoryName.trim() === "") {
-      return alert("Please choose a name for this category");
+      return Alert.alert("", "Please choose a name for this category");
     }
 
     if (createMode) {
@@ -98,7 +103,8 @@ export default function CreateCategory({
         .map((x) => x.CategoryName.toLowerCase())
         .includes(categoryName.trim().toLowerCase())
     ) {
-      return alert(
+      return Alert.alert(
+        "",
         "This name is already taken. Please choose a different name"
       );
     } else {
@@ -135,7 +141,8 @@ export default function CreateCategory({
         .map((x) => x.CategoryName.toLowerCase())
         .includes(categoryName.trim().toLowerCase())
     ) {
-      return alert(
+      return Alert.alert(
+        "",
         "This name is already taken. Please choose a different name"
       );
     } else {
@@ -144,7 +151,7 @@ export default function CreateCategory({
         activeColor.redColor,
         activeColor.greenColor,
         activeColor.blueColor,
-        oldCategory[0],
+        oldCategory[0]
       );
       handleClearSelection();
     }

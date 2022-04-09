@@ -1,6 +1,5 @@
 import { View, StyleSheet, Text } from "react-native";
 import { Icon } from "react-native-elements";
-import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 import { TouchableOpacity } from "react-native";
 
@@ -46,14 +45,6 @@ export default function NodeCard({
   };
 
   const selectMode = getSelectMode();
-  const [loaded] = useFonts({
-    Overpass: require("../assets/fonts/Overpass-Regular.ttf"),
-    OverpassBold: require("../assets/fonts/Overpass-SemiBold.ttf"),
-  });
-
-  if (!loaded) {
-    return null;
-  }
 
   return (
     <TouchableOpacity

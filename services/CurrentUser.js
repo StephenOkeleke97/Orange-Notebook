@@ -1,8 +1,7 @@
 import * as SQLite from "expo-sqlite";
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import UserService from "./UserService";
-import { toggleTwoFactor } from "../components/settings";
-import { setTwoFactor } from "../components/queries";
+import { setTwoFactor } from "../db/queries";
 
 const db = SQLite.openDatabase("notes.db");
 
@@ -44,5 +43,5 @@ async function addTokenToAsyncStorage(token) {
 function syncTwoFactor(email) {
   UserService.getTwoFactor(email, (enabled) => {
     setTwoFactor(enabled);
-  })
+  });
 }
