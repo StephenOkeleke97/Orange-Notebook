@@ -2,10 +2,16 @@ import { openDatabase } from "expo-sqlite";
 
 const db = openDatabase("notes.db");
 
+/**
+ * Enable foreign key support for sqlite db.
+ */
 function enableForeignKeys() {
   db.exec([{ sql: "PRAGMA foreign_keys = ON;", args: [] }], false, () => {});
 }
 
+/**
+ * Create tables and insert default values.
+ */
 export function initializeDB() {
   enableForeignKeys();
   db.transaction((tx) => {
@@ -101,6 +107,9 @@ export function initializeDB() {
   });
 }
 
+/**
+ * Drop database tables
+ */
 export function dropTables() {
   db.transaction((tx) => {
     tx.executeSql("DROP TABLE IF EXISTS Category", [], null, (t, error) =>

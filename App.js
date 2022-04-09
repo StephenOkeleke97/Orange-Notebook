@@ -16,17 +16,13 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { DefaultTheme } from "@react-navigation/native";
 import { useEffect, useState } from "react";
-import * as SQLite from "expo-sqlite";
 import { checkIfLoggedIn } from "./settings/settings";
 import { useFonts } from "expo-font";
-import { dropTables, initializeDB } from "./db/SchemaScript";
+import { initializeDB } from "./db/SchemaScript";
 import { Asset } from "expo-asset";
 import AppLoading from "expo-app-loading";
 
-const db = SQLite.openDatabase("notes.db");
-
 initializeDB();
-// dropTables();
 
 const Stack = createNativeStackNavigator();
 
@@ -40,23 +36,44 @@ const MyTheme = {
 
 export default function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  /**
+   * Indicates if assets have been loaded.
+   */
   const [isLoaded, setIsLoaded] = useState(false);
 
+  /**
+   * Callback to set login status.
+   *
+   * @param {boolean} isLoggedIn login status
+   */
   const handleCheckLoggedIn = (isLoggedIn) => {
     setIsLoggedIn(isLoggedIn);
   };
 
+  /**
+   * Check if a user is logged in. Used to render initial
+   * component. If logged in, HomeLoggedIn screen is
+   * rendered otherwise the Home screen is rendered.
+   */
   useEffect(() => {
     checkIfLoggedIn(handleCheckLoggedIn);
   }, []);
 
+  /**
+   * Load fonts.
+   */
   const [fontLoaded] = useFonts({
     LatoRegular: require("./assets/fonts/Lato-Regular.ttf"),
     LatoBold: require("./assets/fonts/Lato-Bold.ttf"),
-    OverpassBold: require("./assets/fonts/Overpass-Bold.ttf"),
-    Overpass: require("./assets/fonts/Overpass-Regular.ttf")
+    OverpassBold: require("./assets/fonts/Overpass-SemiBold.ttf"),
+    Overpass: require("./assets/fonts/Overpass-Regular.ttf"),
   });
 
+  /**
+   * Cache assets.
+   *
+   * @returns promise that caches assets upon resolve
+   */
   const cacheResources = async () => {
     const images = [
       require("./assets/images/notes.png"),
@@ -69,6 +86,9 @@ export default function App() {
     return Promise.all(cachedImages);
   };
 
+  /**
+   * Load resources when mounted.
+   */
   useEffect(() => {
     const loadResources = async () => {
       await cacheResources();
@@ -77,6 +97,10 @@ export default function App() {
     loadResources();
   }, []);
 
+  /**
+   * Display splash screen while resources are
+   * being loaded.
+   */
   if (!isLoaded || !fontLoaded) {
     return <AppLoading />;
   }
@@ -118,7 +142,7 @@ export default function App() {
           name="CreatePassword"
           component={CreateNewPasswordScreen}
         />
-        <Stack.Screen name="Privacy" component={PrivacyPolicy}/>
+        <Stack.Screen name="Privacy" component={PrivacyPolicy} />
       </Stack.Navigator>
     </NavigationContainer>
   );

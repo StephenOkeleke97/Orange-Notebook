@@ -22,6 +22,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNetInfo } from "@react-native-community/netinfo";
 import Loading from "../components/Loading.js";
 
+/**
+ * Screen to handle settings interactions.
+ *
+ * @param {Object} navigation navigation object
+ * @returns SettingsScreen
+ */
 export default function SettingsScreen({ navigation }) {
   const netInfo = useNetInfo();
   const [isDetailedEnabled, setIsDetailedEnabled] = useState(false);
@@ -29,14 +35,21 @@ export default function SettingsScreen({ navigation }) {
   const [userEmail, setUserEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
+  /**
+   * Indicates whether or not component is mounted.
+   */
   let isMounted = useRef(true);
 
   useEffect(() => {
     return () => {
       isMounted.current = false;
-    }
-  }, [])
+    };
+  }, []);
 
+  /**
+   * Get detailed view and two factor enabled
+   * setting when screen is focused.
+   */
   useFocusEffect(
     React.useCallback(() => {
       getDetailedDisplay(setDetailEnabledCallBack);
@@ -44,12 +57,20 @@ export default function SettingsScreen({ navigation }) {
     })
   );
 
+  /**
+   * Get user email.
+   */
   useEffect(() => {
     getUser().then((user) => {
       setUserEmail(user);
     });
   }, [userEmail]);
 
+  /**
+   * Get user from AsyncStorage.
+   *
+   * @returns promise that returns user if fulfilled
+   */
   const getUser = async () => {
     let user;
     try {
@@ -60,14 +81,26 @@ export default function SettingsScreen({ navigation }) {
     return user;
   };
 
+  /**
+   * Update detailedEnabled variable when
+   * database is updated.
+   *
+   * @param {boolean} bool true if detailed view is enabled
+   * or false otherwise
+   */
   const setDetailEnabledCallBack = (bool) => {
-    if (isMounted.current)
-      setIsDetailedEnabled(bool);
+    if (isMounted.current) setIsDetailedEnabled(bool);
   };
 
+  /**
+   * Update twoFactor variable when
+   * database is updated.
+   *
+   * @param {boolean} bool true if mfa is enabled
+   * or false otherwise
+   */
   const setTwoFactorCallBack = (bool) => {
-    if (isMounted.current)
-      setTwoFactor(bool);
+    if (isMounted.current) setTwoFactor(bool);
   };
 
   const handleNavigateToBackupSettings = () => {
@@ -78,6 +111,10 @@ export default function SettingsScreen({ navigation }) {
     toggleDetailedDisplay(setDetailEnabledCallBack);
   };
 
+  /**
+   * Toggle two factor setting. Setting must be synced with
+   * database, hence, internet connectivity is required.
+   */
   const toggleTwoFactorEnabled = () => {
     if (netInfo.isConnected)
       toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack);
@@ -88,10 +125,20 @@ export default function SettingsScreen({ navigation }) {
       );
   };
 
+  /**
+   * Sync two factor setting with server.
+   *
+   * @param {*} bool true if two factor enabled or
+   * false otherwise
+   */
   const syncWithServerCallBack = (bool) => {
     UserService.enableTwoFactor(userEmail, bool, enableTwoFactorError);
   };
 
+  /**
+   * Revert setting if sync with server
+   * not completed.
+   */
   const enableTwoFactorError = () => {
     const action = twoFactor ? "Disable" : "Enable";
     Alert.alert(
@@ -102,6 +149,9 @@ export default function SettingsScreen({ navigation }) {
     toggleTwoFactor(setTwoFactorCallBack, () => {});
   };
 
+  /**
+   * Delete user account. Prompts confirmation.
+   */
   const handleDeleteAccount = () => {
     Alert.alert(
       "Confirm Delete",
@@ -125,13 +175,17 @@ export default function SettingsScreen({ navigation }) {
     );
   };
 
+  /**
+   * Delete local database after successful
+   * delete from server.
+   */
   const deleteSuccessful = () => {
     //Delete Local
     deleteUser(() => {
       setLoading(false);
       navigation.reset({
         index: 0,
-        routes: [{name: 'Home'}],
+        routes: [{ name: "Home" }],
       });
     });
   };
@@ -145,7 +199,7 @@ export default function SettingsScreen({ navigation }) {
 
   const openPrivacyPolicy = () => {
     navigation.navigate("Privacy");
-  }
+  };
 
   return (
     <View style={styles.container}>
@@ -203,8 +257,11 @@ export default function SettingsScreen({ navigation }) {
             Delete Account
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.settingsComponent} activeOpacity={0.5}
-        onPress={openPrivacyPolicy}>
+        <TouchableOpacity
+          style={styles.settingsComponent}
+          activeOpacity={0.5}
+          onPress={openPrivacyPolicy}
+        >
           <Text style={styles.settingsText}>Privacy Policy</Text>
           <Icon name="chevron-right" type="material-community" color="#000" />
         </TouchableOpacity>

@@ -11,16 +11,40 @@ import { useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { selectCategories, updateNoteCategories } from "../db/queries";
 
+/**
+ * Add selected notes to a category. They can be
+ * added to an existing category or a new category.
+ *
+ * @param {Object} route route object
+ * @param {Object} navigation navigation object
+ * @returns
+ */
 export default function AddNoteToCategoryScreen({ route, navigation }) {
+  /**
+   * boolean to trigger create category modal.
+   */
   const [modalVisible, setModalVisible] = useState(false);
   const [categories, setCategories] = useState([]);
 
+  const { selectedNotes } = route.params;
+
+  /**
+   * Get categories on focus.
+   */
   useFocusEffect(
     React.useCallback(() => {
       selectCategories(selectCategoriesCallback);
     }, [])
   );
 
+  /**
+   * Process categories after retrieving from database.
+   * The "none" category is removed from the category list
+   * because it is fixed at its position and not rendered
+   * dynamically.
+   *
+   * @param {array} array
+   */
   const selectCategoriesCallback = (array) => {
     array.forEach((item, index) => {
       if (item.CategoryName === "None") {
@@ -35,10 +59,19 @@ export default function AddNoteToCategoryScreen({ route, navigation }) {
     setModalVisible(modalVisible);
   };
 
+  /**
+   * Component to list categories.
+   *
+   * @param {string} categoryName name of category
+   * @returns CategoryCard component
+   */
   const CategoryCard = ({ categoryName }) => {
+    /**
+     * Save notes to category and navigate back to home.
+     */
     const add = () => {
       updateNoteCategories(
-        route.params.selectedNotes,
+        selectedNotes,
         categoryName,
         () => {
           navigation.navigate("HomeLoggedIn");
@@ -78,7 +111,7 @@ export default function AddNoteToCategoryScreen({ route, navigation }) {
         </View>
         <Text
           style={styles.description}
-        >{`${route.params.selectedNotes.length} note(s)`}</Text>
+        >{`${selectedNotes.length} note(s)`}</Text>
       </View>
       <View style={styles.categoriesCard}>
         <Text style={{ color: "#939598" }}>CATEGORIES</Text>
@@ -100,7 +133,7 @@ export default function AddNoteToCategoryScreen({ route, navigation }) {
         modalVisible={modalVisible}
         setModalVisible={setModal}
         filteredCategories={categories}
-        notes={route.params.selectedNotes}
+        notes={selectedNotes}
         createMode={true}
         oldCategory={[]}
         navigation={navigation}

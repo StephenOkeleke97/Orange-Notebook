@@ -17,6 +17,21 @@ import {
   editCategory,
 } from "../db/queries";
 
+/**
+ * Create category. Renders a modal
+ * component at center of screen.
+ *
+ * @param {boolean} modalVisible true to show modal or false to hide
+ * @param {function} setModalVisible trigger show/ hide modal
+ * @param {array} filteredCategories array of filtered category names to validate
+ * new category name
+ * @param {array} notes array of notes to be added to this category
+ * @param {boolean} createMode true if create mode or false if edit mode
+ * @param {string} oldCategory old category name
+ * @param {function} clearSelection clear selection in parent component
+ * @param {Object} navigation navigation object
+ * @returns
+ */
 export default function CreateCategory({
   modalVisible,
   setModalVisible,
@@ -27,6 +42,9 @@ export default function CreateCategory({
   clearSelection,
   navigation,
 }) {
+  /**
+   * Object of available category colors.
+   */
   const colors = {
     blue: {
       redColor: 81,
@@ -63,6 +81,9 @@ export default function CreateCategory({
   const [redActive, setRedActive] = useState(false);
   const [purpleActive, setPurpleActive] = useState(false);
 
+  /**
+   * Reset variables when modal is triggered.
+   */
   useEffect(() => {
     if (createMode) {
       setCategoryName("");
@@ -71,6 +92,9 @@ export default function CreateCategory({
     }
   }, [modalVisible]);
 
+  /**
+   * Set active color
+   */
   const triggerActiveColor = () => {
     setBlueActive(false);
     setYellowActive(false);
@@ -85,6 +109,11 @@ export default function CreateCategory({
     }
   };
 
+  /**
+   * Save category to database.
+   *
+   * @returns alert if name is empty
+   */
   const saveCategory = () => {
     if (categoryName.trim() === "") {
       return Alert.alert("", "Please choose a name for this category");
@@ -97,6 +126,11 @@ export default function CreateCategory({
     }
   };
 
+  /**
+   * Save category to database if create mode is active.
+   *
+   * @returns return alert if name is unavailable
+   */
   const handleSaveCreateMode = () => {
     if (
       filteredCategories
@@ -121,6 +155,10 @@ export default function CreateCategory({
     setCategoryName("");
   };
 
+  /**
+   * Move selected notes to new category. If edit mode is
+   * active, the database does this automatically.
+   */
   const updateNotesOfCategoryAfterSave = () => {
     if (notes != null) {
       updateNoteCategories(
@@ -134,6 +172,11 @@ export default function CreateCategory({
     }
   };
 
+  /**
+   * Save category to database if edit mode is active.
+   *
+   * @returns return alert if name is unavailable
+   */
   const handleSaveEditMode = () => {
     if (
       filteredCategories

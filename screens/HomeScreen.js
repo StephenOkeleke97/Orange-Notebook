@@ -1,6 +1,11 @@
 import { Text, View, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { globalStyles } from "../styles/global";
 
+/**
+ * Application home screen.
+ * @param {Object} navigation navigation object 
+ * @returns 
+ */
 export default function HomeScreen({ navigation }) {
   return (
     <View style={globalStyles.container}>

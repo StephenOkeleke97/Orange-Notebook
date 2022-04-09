@@ -22,19 +22,24 @@ const getLastBackUpInfoAPI = host + "getbackupinfo";
 
 const db = SQLite.openDatabase("notes.db");
 
+/**
+ * Store jwt in auth header and insert bearer prefix.
+ */
 (function () {
   getToken().then((token) => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = "Bearer " + token;
     } else {
       axios.defaults.headers.common["Authorization"] = null;
-      /*if setting null does not remove `Authorization` header then try     
-        delete axios.defaults.headers.common['Authorization'];
-      */
     }
   });
 })();
 
+/**
+ * Get jwt token.
+ *
+ * @returns promise that returns token when fulfilled
+ */
 async function getToken() {
   let token;
   try {
@@ -45,10 +50,27 @@ async function getToken() {
   return token;
 }
 
+/**
+ * Class to handle API calls.
+ */
 class UserService {
+  /**
+   * Request timeout.
+   */
   timeout = 10000;
-  initialWait = 5000;
 
+  /**
+   * Back up database to server.
+   *
+   * @param {string} email useremail. Used to construct file name
+   * @param {function} successful called after successful backup
+   * @param {function} failure called when backup fails
+   * @param {function} updateProgress update backup progress
+   * @param {boolean} isAutomatic true if backup is not initiated by user or
+   * false otherwise. If true, no feedback is given.
+   * @param {function} automaticCallBack callback called only when
+   * back up is auto.
+   */
   async backUp(
     email,
     successful,
@@ -96,6 +118,16 @@ class UserService {
       });
   }
 
+  /**
+   * Restore backup from server. File is downloaded to
+   * the a "backup" file in the SQLite directory.
+   *
+   * @param {function} successful called if restore is successful
+   * @param {function} failure called is restore fails
+   * @param {function} updateProgress updates restore progress
+   * @param {function} updateLastDateAndSize update last backup date and
+   * size if restore successful
+   */
   restoreBackup(successful, failure, updateProgress, updateLastDateAndSize) {
     getToken().then((token) => {
       FileSystem.createDownloadResumable(
@@ -146,6 +178,18 @@ class UserService {
     });
   }
 
+  /**
+   * Compare server and client checksum. If they are
+   * the same, Copy file from download location "...SQLite/backup" to
+   * the actual db path ("...SQLite/notes.db").
+   *
+   * @param {string} serverChecksum md5 hash from server
+   * @param {string} clientChecksum md5 hash of file in file system
+   * @param {function} successful called if copy is successful
+   * @param {function} failure called if copy fails
+   * @param {function} updateLastDateAndSize update last backup date and
+   * size if copy is successful
+   */
   handleFileCopy(
     serverChecksum,
     clientChecksum,
@@ -168,10 +212,19 @@ class UserService {
           failure("Restore");
         });
     } else {
-      failure("Restore", "File may have been corrupted during restore. Please try again.");
+      failure(
+        "Restore",
+        "File may have been corrupted during restore. Please try again."
+      );
     }
   }
 
+  /**
+   * Delete backup from server.
+   *
+   * @param {function} success called if delete successful
+   * @param {function} failure called if delete fails
+   */
   deleteBackup(success, failure) {
     axios
       .delete(deleteBackupAPI, {
@@ -191,6 +244,14 @@ class UserService {
       });
   }
 
+  /**
+   * Register new user.
+   *
+   * @param {string} email user email
+   * @param {string} password user password
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
   register(email, password, success, failure) {
     axios
       .post(registerAPI, null, {
@@ -213,6 +274,14 @@ class UserService {
       });
   }
 
+  /**
+   * Enable newly created account.
+   *
+   * @param {string} email user email
+   * @param {string} code verification code
+   * @param {function} success callback on success
+   * @param {function} failure callback on success
+   */
   enableAccount(email, code, success, failure) {
     axios
       .post(enableAPI, null, {
@@ -235,6 +304,13 @@ class UserService {
       });
   }
 
+  /**
+   * Request verification code.
+   *
+   * @param {string} email user email
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
   requestCode(email, success, failure) {
     axios
       .post(requestTokenAPI, null, {
@@ -255,6 +331,15 @@ class UserService {
       });
   }
 
+  /**
+   * Login user.
+   *
+   * @param {string} email user email
+   * @param {string} password user password
+   * @param {int} code verification code
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
   login(email, password, code, success, failure) {
     axios
       .post(loginAPI, null, {
@@ -280,6 +365,14 @@ class UserService {
       });
   }
 
+  /**
+   * Enable or disable two factor
+   * authentication.
+   *
+   * @param {email} email user email
+   * @param {boolean} enable true to enable or false to disable
+   * @param {function} failure
+   */
   enableTwoFactor(email, enable, failure) {
     axios
       .post(enableMfaAPI, null, {
@@ -295,6 +388,13 @@ class UserService {
       });
   }
 
+  /**
+   * Get two factor setting of user account.
+   *
+   * @param {string} email user email
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
   getTwoFactor(email, success, failure) {
     axios
       .post(getTwoFactorAPI, null, {
@@ -317,6 +417,12 @@ class UserService {
       });
   }
 
+  /**
+   * Delete user account.
+   *
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
   delete(success, failure) {
     axios
       .delete(deleteUserAPI, {
@@ -330,6 +436,15 @@ class UserService {
       });
   }
 
+  /**
+   * Reset user password.
+   *
+   * @param {string} email user email
+   * @param {string} password user new password
+   * @param {int} code verification code
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
   resetPassword(email, password, code, success, failure) {
     axios
       .put(resetPasswordAPI, null, {
@@ -352,6 +467,13 @@ class UserService {
       });
   }
 
+  /**
+   * Get last backup information from
+   * server.
+   *
+   * @param {function} updateLocal update local database
+   * with new info
+   */
   getLastBackUpInfo(updateLocal) {
     axios
       .get(getLastBackUpInfoAPI, {

@@ -1,6 +1,13 @@
 import { View, StyleSheet, ActivityIndicator } from "react-native";
 import React from "react";
 
+/**
+ * Loading screen that overlays elements 
+ * to prevent touch action during loading.
+ * Uses an activity monitor to indicate loading.
+ * 
+ * @returns Loading component
+ */
 export default function Loading() {
   return (
     <View style={styles.container}>

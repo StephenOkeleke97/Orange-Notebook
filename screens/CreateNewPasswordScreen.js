@@ -14,6 +14,13 @@ import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
 import Loading from "../components/Loading";
 
+/**
+ * Screen to create new password.
+ * 
+ * @param {Object} navigation navigation object 
+ * @param {Object} route route object 
+ * @returns CreateNewPasswordScreen component
+ */
 const CreateNewPasswordScreen = ({ navigation, route }) => {
   const { email, code } = route.params;
   const verifyPassword =

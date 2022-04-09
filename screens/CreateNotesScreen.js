@@ -12,21 +12,30 @@ import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
 import { createNewNote, editNote } from "../db/queries.js";
 
+/**
+ * Screen to create or edit notes.
+ *
+ * @param {Object} navigation navigation object
+ * @param {Object} route route object
+ * @returns CreateNotesScreen component
+ */
 export default function CreateNotesScreen({ navigation, route }) {
+  const { title, label, content, action, fromHome, category, id } =
+    route.params;
   const d = new Date();
   const date = `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`;
-  const [titleText, setTitleText] = useState(route.params.title);
-  const [labelText, setLabelText] = useState(route.params.label);
-  const [contentText, setContentText] = useState(route.params.content);
+  const [titleText, setTitleText] = useState(title);
+  const [labelText, setLabelText] = useState(label);
+  const [contentText, setContentText] = useState(content);
   const keyboardVerticalOffset = Platform.OS === "ios" ? 10 : 0;
 
   const createNote = () => {
-    if (route.params.action === "Edit") {
-      editNote(titleText, labelText, contentText, date, route.params.id);
+    if (action === "Edit") {
+      editNote(titleText, labelText, contentText, date, id);
     } else {
       createNewNote(
         titleText,
-        route.params.category,
+        category,
         labelText,
         contentText,
         date,
@@ -37,10 +46,10 @@ export default function CreateNotesScreen({ navigation, route }) {
   };
 
   const goBack = () => {
-    route.params.fromHome
+    fromHome
       ? navigation.navigate("HomeLoggedIn")
       : navigation.navigate("NotesScreen", {
-          category: route.params.category,
+          category: category,
         });
   };
 
@@ -60,9 +69,7 @@ export default function CreateNotesScreen({ navigation, route }) {
               >
                 <Icon name="closecircleo" type="antdesign" size={23} />
               </TouchableOpacity>
-              <Text
-                style={styles.headerText}
-              >{`${route.params.action} Note`}</Text>
+              <Text style={styles.headerText}>{`${action} Note`}</Text>
               <TouchableOpacity
                 style={styles.headerIcons}
                 onPress={() => createNote()}
@@ -85,7 +92,7 @@ export default function CreateNotesScreen({ navigation, route }) {
             <View style={styles.details}>
               <View style={styles.categoryPlaceHolder}>
                 <Text style={styles.labelText} numberOfLines={1}>
-                  {route.params.category}
+                  {category}
                 </Text>
               </View>
               <View style={styles.label}>

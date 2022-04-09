@@ -11,6 +11,11 @@ import {
   selectAllNotes,
 } from "../db/queries.js";
 
+/**
+ * Recently deleted screen.
+ *
+ * @returns TrashScreen
+ */
 export default function TrashScreen() {
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [searchedText, setSearchedText] = useState("");
@@ -20,6 +25,9 @@ export default function TrashScreen() {
   const [selected, setSelected] = useState(false);
   const [triggerSelectAll, setTriggerSelectAll] = useState(false);
 
+  /**
+   * Get deleted notes on focus.
+   */
   useFocusEffect(
     React.useCallback(() => {
       setSearchedText("");
@@ -29,17 +37,27 @@ export default function TrashScreen() {
     }, [])
   );
 
+  /**
+   * Select deleted notes to reflect
+   * searched text.
+   */
   useEffect(() => {
     selectAllNotes("true", "false", onSelectAllNotes);
   }, [searchedText]);
 
+  /**
+   * Callback to filtered notes with result
+   * from database.
+   *
+   * @param {array} array deleted notes from database
+   */
   const onSelectAllNotes = (array) => {
     setFilteredNotes(
       array.filter((note) =>
         note.Content.toLowerCase().includes(searchedText.toLowerCase())
       )
     );
-  }
+  };
 
   const getSelectMode = () => {
     return selectMode;
@@ -50,11 +68,21 @@ export default function TrashScreen() {
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Add noteID to selected notes list.
+   *
+   * @param {int} noteID note id to be added
+   */
   const addToSelectedNotes = (noteID) => {
     selectedNotes.push(noteID);
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Remove noteID from selected notes list.
+   *
+   * @param {int} noteID note id to be removed
+   */
   const removeFromSelectedNotes = (noteID) => {
     const index = selectedNotes.indexOf(noteID);
     if (index > -1) {
@@ -63,6 +91,10 @@ export default function TrashScreen() {
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Permanently deleted selected notes from
+   * database.
+   */
   const deleteSelectedNotes = () => {
     if (selectedNotes.length > 0) {
       permanentDelete(selectedNotes);
@@ -71,6 +103,9 @@ export default function TrashScreen() {
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Restore selected notes.
+   */
   const restoreSelectedNotes = () => {
     if (selectedNotes.length > 0) {
       restoreDeletedNotes(selectedNotes);
@@ -79,6 +114,9 @@ export default function TrashScreen() {
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Select all notes.
+   */
   const selectAll = () => {
     setSelected(true);
     setTriggerSelectAll(!triggerSelectAll);
@@ -90,6 +128,12 @@ export default function TrashScreen() {
     return selected;
   };
 
+  /**
+   * Render NoteCardSlim in flastlist.
+   *
+   * @param {Object} item note object
+   * @returns NoteCardSlim component
+   */
   const renderItem = ({ item }) => (
     <NoteCardSlim
       id={item.NotesID}

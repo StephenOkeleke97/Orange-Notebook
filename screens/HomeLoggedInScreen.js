@@ -19,34 +19,54 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const Tab = createBottomTabNavigator();
 
+/**
+ * Home screen when user is logged in.
+ *
+ * @returns HomeLoggedInScreen
+ */
 export default function HomeLoggedInScreen() {
   const [userEmail, setUserEmail] = useState("");
 
+  /**
+   * Frequency of backup in milliseconds.
+   * Used to calculate next backup date.
+   */
   const backupFrequency = {
     Daily: 86400000,
     Weekly: 604800000,
     Monthly: 2419200000,
   };
 
+  /**
+   * Get user email when component is mounted.
+   */
   useEffect(() => {
     getUser().then((user) => {
       setUserEmail(user);
     });
   }, [userEmail]);
 
+  /**
+   * Get last back up information from server.
+   */
   useEffect(() => {
     if (userEmail) UserService.getLastBackUpInfo(updateLocalBackUpInfo);
   }, [userEmail]);
 
+  /**
+   * Check if a backup is due when the app
+   * is open. Only valid when auto backup
+   * is enabled.
+   */
   useEffect(() => {
-    const subscription = AppState.addEventListener("change", state => {
+    const subscription = AppState.addEventListener("change", (state) => {
       if (state === "active") {
         getBackupEnabled((enabled) => {
           getNextBackUpDate((date) => {
             let d = new Date().getTime();
             if (enabled && d >= date) {
               UserService.backUp(
-                userEmail,    
+                userEmail,
                 () => {},
                 () => {},
                 () => {},
@@ -60,11 +80,17 @@ export default function HomeLoggedInScreen() {
     });
 
     return () => {
-      if (subscription)
-        subscription.remove();
-    }
+      if (subscription) subscription.remove();
+    };
   }, []);
 
+  /**
+   * Update next back up date after a
+   * backup is successful. Calculated
+   * as the current time in milliseconds
+   * plus the milliseconds value  of the
+   * frequency.
+   */
   const handleSuccesfulBackUp = () => {
     getBackupFrequency((frequency) => {
       let d = new Date().getTime();
@@ -72,6 +98,12 @@ export default function HomeLoggedInScreen() {
     });
   };
 
+  /**
+   * Update local backup info. Used after
+   * backup information is synced from server.
+   *
+   * @param {Object} data backup information from server
+   */
   const updateLocalBackUpInfo = (data) => {
     if (data.date && data.size) {
       const date = parseDateFromServer(data.date);
@@ -80,6 +112,12 @@ export default function HomeLoggedInScreen() {
     }
   };
 
+  /**
+   * Parse date into desired format: yyyy-MM-dd hh:mm:ss
+   *
+   * @param {Date} date date to be parsed
+   * @returns parsed date
+   */
   const parseDateFromServer = (date) => {
     const temp = new Date(Date.parse(date));
     const parsedDate = `${temp.getFullYear()}-${
@@ -88,6 +126,11 @@ export default function HomeLoggedInScreen() {
     return parsedDate;
   };
 
+  /**
+   * Get user email from AsyncStorage.
+   *
+   * @returns promise that returns the user when fulfilled
+   */
   const getUser = async () => {
     let user;
     try {

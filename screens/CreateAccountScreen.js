@@ -14,21 +14,33 @@ import { HideKeyboard } from "../components/HideKeyboard.js";
 import UserService from "../services/UserService.js";
 import Loading from "../components/Loading.js";
 
+/**
+ * Screen to register a user account.
+ *
+ * @param {Object} navigation navigation object
+ * @returns
+ */
 export default function CreateAccountScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  /**
+   * Indicates an error in the email address.
+   */
   const [emailIsError, setEmailIsError] = useState(false);
+  /**
+   * Indicates an error in the password.
+   */
   const [passwordIsError, setPasswordIsError] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  /**
+   * Regex to match password format. Uppercase letter,
+   * Lowercase letter, number, special character and length >= 8.
+   */
   const verifyPassword =
     /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
   const validator = require("email-validator");
-
-  useFonts({
-    LatoRegular: require("../assets/fonts/Lato-Regular.ttf"),
-    LatoBold: require("../assets/fonts/Lato-Bold.ttf"),
-  });
 
   const onSubmit = () => {
     if (!validator.validate(email.trim())) {
@@ -41,6 +53,10 @@ export default function CreateAccountScreen({ navigation }) {
     }
   };
 
+  /**
+   * Callback to handle successful registeration.
+   * Navigate to verify email to enable account.
+   */
   const registerSuccessful = () => {
     setLoading(false);
     navigation.navigate("VerifyEmail", {

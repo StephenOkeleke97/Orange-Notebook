@@ -5,11 +5,21 @@ import { useFocusEffect } from "@react-navigation/native";
 import { setBackupFrequency, getBackupFrequency } from "../settings/settings";
 import { globalStyles } from "../styles/global";
 
+/**
+ * A screen for handling Backup settings frequency
+ * interactions.
+ *
+ * @param {Object} navigation navigation object
+ * @returns BackupSettingsFrequency component
+ */
 const BackupSettingsFrequency = ({ navigation }) => {
   const [dailyActive, setDailyActive] = useState(false);
   const [weeklyActive, setWeeklyActive] = useState(false);
   const [monthlyActive, setMonthlyActive] = useState(false);
 
+  /**
+   * Get active frequency from database on focus.
+   */
   useFocusEffect(
     React.useCallback(() => {
       getBackupFrequency((frequency) => {
@@ -21,6 +31,9 @@ const BackupSettingsFrequency = ({ navigation }) => {
     }, [])
   );
 
+  /**
+   * Set active frequenct to daily.
+   */
   const handleDailyActive = () => {
     setBackupFrequency("Daily", () => {
       setDailyActive(true);
@@ -29,6 +42,9 @@ const BackupSettingsFrequency = ({ navigation }) => {
     });
   };
 
+  /**
+   * Set active frequenct to weekly.
+   */
   const handleWeeklyActive = () => {
     setBackupFrequency("Weekly", () => {
       setDailyActive(false);
@@ -37,6 +53,9 @@ const BackupSettingsFrequency = ({ navigation }) => {
     });
   };
 
+  /**
+   * Set active frequenct to monthly.
+   */
   const handleMonthlyActive = () => {
     setBackupFrequency("Monthly", () => {
       setDailyActive(false);
@@ -45,6 +64,9 @@ const BackupSettingsFrequency = ({ navigation }) => {
     });
   };
 
+  /**
+   * Go back to Backup settings.
+   */
   const handleBack = () => {
     navigation.navigate("Backup");
   };

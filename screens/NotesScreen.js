@@ -23,6 +23,15 @@ import {
   selectNotesOfCategory,
 } from "../db/queries.js";
 
+/**
+ * Screen to handle interactions with notes.
+ * Users can view all notes or notes in a
+ * certain category.
+ *
+ * @param {Object} navigation navigation object
+ * @param {Object} route route object
+ * @returns NotesScreen
+ */
 export default function NotesScreen({ navigation, route }) {
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [searchedText, setSearchedText] = useState("");
@@ -35,6 +44,9 @@ export default function NotesScreen({ navigation, route }) {
   const [detailedView, setDetailedView] = useState(false);
   const keyboardVerticalOffset = Platform.OS === "ios" ? 60 : 0;
 
+  /**
+   * Load notes when screen is focused.
+   */
   useFocusEffect(
     React.useCallback(() => {
       setSearchedText("");
@@ -45,10 +57,17 @@ export default function NotesScreen({ navigation, route }) {
     }, [notesTabActive])
   );
 
+  /**
+   * Get notes when a search is entered or when the
+   * notes tab is focused.
+   */
   useEffect(() => {
     getNotes();
   }, [searchedText, notesTabActive]);
 
+  /**
+   * Retrieve notes from database.
+   */
   const getNotes = () => {
     if (notesTabActive) {
       route.params === undefined
@@ -65,22 +84,42 @@ export default function NotesScreen({ navigation, route }) {
     }
   };
 
+  /**
+   * Retrieve all unpinned notes from database.
+   */
   const getAllUnpinnedNotes = () => {
     selectAllNotes("false", "false", getNotesCallback);
   };
 
+  /**
+   * Retrieved all pinned notes from database.
+   */
   const getAllPinnedNotes = () => {
     selectAllNotes("false", "true", getNotesCallback);
   };
 
+  /**
+   * Retrieve unpinned notes of certain category
+   * from database.
+   */
   const getUnpinnedNotesOfCategory = () => {
     selectNotesOfCategory("false", route.params.category, getNotesCallback);
   };
 
+  /**
+   * Retrieve pinned notes of certain category
+   * from database.
+   */
   const getPinnedNotesOfCategory = () => {
     selectNotesOfCategory("true", route.params.category, getNotesCallback);
   };
 
+  /**
+   * Callback to update notes with data
+   * retrieved from database.
+   *
+   * @param {array} array notes
+   */
   const getNotesCallback = (array) => {
     setFilteredNotes(
       array.filter((note) =>
@@ -89,15 +128,33 @@ export default function NotesScreen({ navigation, route }) {
     );
   };
 
+  /**
+   * Callback to set the note card type.
+   * When detailed view is enabled, NoteCard is rendered
+   * else NoteCardSlim is rendered.
+   *
+   * @param {boolean} bool true if detailed view is enabled or false'
+   * otherwise
+   */
   const setDetailedViewCallBack = (bool) => {
     setDetailedView(bool);
   };
 
+  /**
+   * Add note to selected notes list.
+   *
+   * @param {int} noteID note to add
+   */
   const addToSelectedNotes = (noteID) => {
     selectedNotes.push(noteID);
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Remove note from selected notes list.
+   *
+   * @param {int} noteID note to remove
+   */
   const removeFromSelectedNotes = (noteID) => {
     const index = selectedNotes.indexOf(noteID);
     if (index > -1) {
@@ -106,10 +163,26 @@ export default function NotesScreen({ navigation, route }) {
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Get select mode. Passed to component
+   * which renders notes.
+   *
+   * @returns selectMode
+   */
   const getSelectMode = () => {
     return selectMode;
   };
 
+  /**
+   * Navigate to CreateNote screen.
+   *
+   * @param {string} action create or edit
+   * @param {string} title note title
+   * @param {string} category note category
+   * @param {string} label note label
+   * @param {string} content content of note
+   * @param {int} id note id
+   */
   const navigateToEditNotes = (action, title, category, label, content, id) => {
     navigation.navigate("CreateNote", {
       action: action,
@@ -129,6 +202,11 @@ export default function NotesScreen({ navigation, route }) {
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Select all notes from filtered list.
+   * If a triggered when a search is active, only
+   * notes that match search will be selected.
+   */
   const selectAll = () => {
     setSelected(true);
     setTriggerSelectAll(!triggerSelectAll);
@@ -174,6 +252,15 @@ export default function NotesScreen({ navigation, route }) {
     }
   };
 
+  /**
+   * Render component that displays notes.
+   * If detailed view is enabled, the NoteCard component is rendered
+   * otherwise the NodeCardSlim component is rendered.
+   *
+   * @param {Object} item note item
+   * @param {int} index index of note in array
+   * @returns NoteCard or NoteCardSlim component
+   */
   const renderItem = ({ item, index }) =>
     detailedView ? (
       <NoteCard
