@@ -303,7 +303,7 @@ export default function CategoriesScreen({ navigation }) {
               />
             </View>
           ) : (
-            <Text style={styles.categoryFlatList}>No categories to show</Text>
+            <Text style={styles.emptyCategory}>No categories to show</Text>
           )}
           <CreateCategory
             modalVisible={modalVisible}
@@ -389,4 +389,10 @@ const styles = StyleSheet.create({
     paddingLeft: 15,
     paddingRight: 15,
   },
+
+  emptyCategory: {
+    color: "#6D6E71",
+    paddingLeft: 15,
+    paddingRight: 15,
+  }
 });
