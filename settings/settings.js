@@ -1,9 +1,7 @@
-import * as SQLite from "expo-sqlite";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";
 import { initializeDB } from "../db/SchemaScript";
-
-const db = SQLite.openDatabase("notes.db");
+import { dB } from "../db/SchemaScript";
 
 var detailedDisplay;
 var backupEnabled;
@@ -16,7 +14,7 @@ var twoFactor;
  * after detail retrieved
  */
 export function getDetailedDisplay(setDetailEnabledCallBack) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       'SELECT SettingEnabled FROM Settings WHERE SettingName = "DetailedView"',
       null,
@@ -36,7 +34,7 @@ export function getDetailedDisplay(setDetailEnabledCallBack) {
  * after setting toggled in database
  */
 export function toggleDetailedDisplay(setDetailEnabledCallBack) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "DetailedView"',
       [!detailedDisplay],
@@ -55,7 +53,7 @@ export function toggleDetailedDisplay(setDetailEnabledCallBack) {
  * after setting retrieved
  */
 export function getBackupEnabled(setBackupEnabledCallBack) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       'SELECT SettingEnabled FROM Settings WHERE SettingName = "BackupEnabled"',
       null,
@@ -75,7 +73,7 @@ export function getBackupEnabled(setBackupEnabledCallBack) {
  * after setting toggled
  */
 export function toggleBackupEnabled(setBackupEnabledCallBack) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "BackupEnabled"',
       [!backupEnabled],
@@ -95,7 +93,7 @@ export function toggleBackupEnabled(setBackupEnabledCallBack) {
  * after setting retrieved
  */
 export function getTwoFactor(setTwoFactorCallBack) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       'SELECT SettingEnabled FROM Settings WHERE SettingName = "TwoFactor"',
       null,
@@ -118,7 +116,7 @@ export function getTwoFactor(setTwoFactorCallBack) {
  * to server
  */
 export function toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       'UPDATE Settings SET SettingEnabled = ? WHERE SettingName = "TwoFactor"',
       [!twoFactor],
@@ -134,14 +132,14 @@ export function toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack) {
 /**
  * Set frequency of automatic backups.
  * Three options available: Daily, Weekly, Monthly.
- * 
+ *
  * @param {string} frequency auto backup frequency
  * @param {function} callback callback called after setting
  * set successfully
  */
 export function setBackupFrequency(frequency, callback) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "UPDATE Users SET BackupFrequency = ? WHERE UserEmail = ?",
         [frequency, user],
@@ -154,13 +152,13 @@ export function setBackupFrequency(frequency, callback) {
 
 /**
  * Get frequency of automatic backups.
- * 
- * @param {function} callback callback called after 
+ *
+ * @param {function} callback callback called after
  * setting retrieved successfully
  */
 export function getBackupFrequency(callback) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "SELECT BackupFrequency FROM Users WHERE UserEmail = ?",
         [user],
@@ -173,12 +171,12 @@ export function getBackupFrequency(callback) {
 
 /**
  * Set date of last back up.
- * 
+ *
  * @param {string} date formatted date
  */
 export function setLastBackupDate(date) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "UPDATE Users SET BackupDate = ? WHERE UserEmail = ?",
         [date, user],
@@ -191,13 +189,13 @@ export function setLastBackupDate(date) {
 
 /**
  * Get date of last backup.
- * 
+ *
  * @param {function} callback callback called
  * after date is retrieved successfully
  */
 export function getLastBackUpDate(callback) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "SELECT BackupDate FROM Users WHERE UserEmail = ?",
         [user],
@@ -211,12 +209,12 @@ export function getLastBackUpDate(callback) {
 
 /**
  * Set the size of last back up in bytes.
- * 
+ *
  * @param {int} size size of last back up
  */
 export function setLastBackupSize(size) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "UPDATE Users SET BackupSize = ? WHERE UserEmail = ?",
         [size, user],
@@ -229,13 +227,13 @@ export function setLastBackupSize(size) {
 
 /**
  * Get the size of last back up.
- * 
+ *
  * @param {function} callback callback called
  * after size is retrieved
  */
 export function getLastBackUpSize(callback) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "SELECT BackupSize FROM Users WHERE UserEmail = ?",
         [user],
@@ -249,12 +247,12 @@ export function getLastBackUpSize(callback) {
 
 /**
  * Delete local database and recreate schema.
- * 
+ *
  * @param {function} success callback called after
  * database successfully deleted
  */
 export function deleteUser(success) {
-  FileSystem.deleteAsync(FileSystem.documentDirectory + "SQLite/notes.db")
+  FileSystem.deleteAsync(FileSystem.documentDirectory + "SQLite")
     .then(() => {
       initializeDB();
       AsyncStorage.clear()
@@ -273,12 +271,12 @@ export function deleteUser(success) {
 /**
  * Check size of user table to find out if
  * user exists. Return size > 0 to callback.
- * 
- * @param {function} callback callback to receive 
+ *
+ * @param {function} callback callback to receive
  * result
  */
 export function checkIfLoggedIn(callback) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "SELECT UserEmail from Users Limit 1",
       null,
@@ -292,12 +290,12 @@ export function checkIfLoggedIn(callback) {
 
 /**
  * Get date of next scheduled back up.
- * 
+ *
  * @param {function} callback callback to receive date
  */
 export function getNextBackUpDate(callback) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "SELECT NextBackUpDate FROM Users WHERE UserEmail = ?",
         [user],
@@ -314,12 +312,12 @@ export function getNextBackUpDate(callback) {
 
 /**
  * Set the date of next back up in epoch time.
- * 
+ *
  * @param {long} dateInEpoch date in epoch time
  */
 export function updateNextBackUpDate(dateInEpoch) {
   getUser().then((user) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "UPDATE Users SET NextBackUpDate = ? WHERE UserEmail = ?",
         [dateInEpoch, user],
@@ -332,7 +330,7 @@ export function updateNextBackUpDate(dateInEpoch) {
 
 /**
  * Retrieve email of logged in user from AsyncStorage.
- *  
+ *
  * @returns promise which returns a user when fulfilled
  */
 async function getUser() {
@@ -343,4 +341,18 @@ async function getUser() {
     console.log(err);
   }
   return user;
+}
+
+/**
+ * Parse date into desired format: yyyy-MM-dd hh:mm:ss
+ *
+ * @param {Date} date date to be parsed
+ * @returns parsed date
+ */
+export function parseDate(date) {
+  let temp = new Date(Date.parse(date));
+  const parsedDate = `${temp.getFullYear()}-${
+    temp.getMonth() + 1
+  }-${temp.getDate()} ${temp.getHours()}:${temp.getMinutes()}:${temp.getSeconds()}`;
+  return parsedDate;
 }

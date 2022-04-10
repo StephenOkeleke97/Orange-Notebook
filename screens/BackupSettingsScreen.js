@@ -19,6 +19,7 @@ import {
   setLastBackupSize,
   getBackupEnabled,
   toggleBackupEnabled,
+  parseDate,
 } from "../settings/settings.js";
 import { Icon } from "react-native-elements";
 import { globalStyles } from "../styles/global";
@@ -27,8 +28,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 /**
  * Screen for handling Backup interactions.
- * 
- * @param {Object} navigation navigation object 
+ *
+ * @param {Object} navigation navigation object
  * @returns BackupSettingsScreen component
  */
 const BackupSettingsScreen = ({ navigation }) => {
@@ -53,7 +54,7 @@ const BackupSettingsScreen = ({ navigation }) => {
   const [progressPercent, setProgressPercent] = useState(0 + " %");
   /**
    * Used by switch component to indicate whether
-   * or not auto backup is enabled. 
+   * or not auto backup is enabled.
    */
   const [backupEnabled, setBackupEnabled] = useState(false);
 
@@ -116,7 +117,7 @@ const BackupSettingsScreen = ({ navigation }) => {
 
   /**
    * Get user email.
-   * 
+   *
    * @returns promise that returns user when fulfilled
    */
   const getUser = async () => {
@@ -132,7 +133,7 @@ const BackupSettingsScreen = ({ navigation }) => {
   /**
    * Callback to trigger switch when backup is
    * successfully enabled.
-   * 
+   *
    * @param {boolean} bool true if backup is enabled or false otherwise
    */
   const setBackupEnabledCallBack = (bool) => {
@@ -149,7 +150,7 @@ const BackupSettingsScreen = ({ navigation }) => {
   /**
    * Update progress of backup download or upload
    * to server.
-   * 
+   *
    * @param {int} percent percent completed
    */
   const updateProgress = (percent) => {
@@ -209,35 +210,8 @@ const BackupSettingsScreen = ({ navigation }) => {
   };
 
   /**
-   * Update last back up date and size after successful
-   * backup, delete or restore.
-   */
-  const updateLastDateAndSize = () => {
-    UserService.getLastBackUpInfo((data) => {
-      const date = parseDateFromServer(data.date);
-
-      setLastBackupDate(date);
-      setLastBackupSize(data.size / 100000);
-    });
-  };
-
-  /**
-   * Parse date into desired format: yyyy-MM-dd hh:mm:ss
-   * 
-   * @param {Date} date date to be parsed
-   * @returns parsed date
-   */
-  const parseDateFromServer = (date) => {
-    let temp = new Date(Date.parse(date));
-    const parsedDate = `${temp.getFullYear()}-${
-      temp.getMonth() + 1
-    }-${temp.getDate()} ${temp.getHours()}:${temp.getMinutes()}:${temp.getSeconds()}`;
-    return parsedDate;
-  };
-
-  /**
    * Restore backup from server. Action runs
-   * in the background. 
+   * in the background.
    * Triggers confirmation.
    */
   const handleRestoreFromServer = () => {
@@ -260,7 +234,6 @@ const BackupSettingsScreen = ({ navigation }) => {
               actionSuccessful,
               actionFailed,
               updateProgress,
-              updateLastDateAndSize
             );
           },
         },

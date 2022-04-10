@@ -16,9 +16,9 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
       <View style={styles.welcomeView}>
-        <Text style={globalStyles.headerText}>Welcome to Notes!</Text>
+        <Text style={globalStyles.headerText}>Welcome to Orange Notes!</Text>
         <Text style={styles.welcomeBodyText}>
-          Easily Manage Your Notes On Your Phone & You Can Have Infinite Notes
+          Easily Manage Your Notes On Your Phone & You Can Have Infinite Notes Too
         </Text>
         <TouchableOpacity
           style={globalStyles.yellowButton}

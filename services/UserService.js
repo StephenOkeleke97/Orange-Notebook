@@ -1,16 +1,15 @@
 import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { FileSystemSessionType } from "expo-file-system";
-import * as SQLite from "expo-sqlite";
-import { setLastBackupDate, setLastBackupSize } from "../settings/settings";
+import { parseDate, setLastBackupDate, setLastBackupSize } from "../settings/settings";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { close } from "../db/SchemaScript";
 
-const rawHost = "http://192.168.1.100:8080/";
-const host = "http://192.168.1.100:8080/api/";
+const host = "https://orangenotesbysteve.herokuapp.com/api/";
 const registerAPI = host + "register";
 const enableAPI = host + "enableaccount";
 const requestTokenAPI = host + "requesttoken";
-const loginAPI = rawHost + "login";
+const loginAPI = "https://orangenotesbysteve.herokuapp.com/" + "login";
 const backupAPI = host + "backup";
 const restoreAPI = host + "restore";
 const deleteBackupAPI = host + "deletebackup";
@@ -20,20 +19,19 @@ const deleteUserAPI = host + "deleteaccount";
 const resetPasswordAPI = host + "resetpassword";
 const getLastBackUpInfoAPI = host + "getbackupinfo";
 
-const db = SQLite.openDatabase("notes.db");
-
 /**
  * Store jwt in auth header and insert bearer prefix.
  */
-(function () {
+export function setAuthHeader () {
   getToken().then((token) => {
+    console.log(token);
     if (token) {
       axios.defaults.headers.common["Authorization"] = "Bearer " + token;
     } else {
       axios.defaults.headers.common["Authorization"] = null;
     }
   });
-})();
+}
 
 /**
  * Get jwt token.
@@ -103,10 +101,7 @@ class UserService {
         },
       })
       .then((response) => {
-        const d = new Date();
-        const date = `${d.getFullYear()}-${
-          d.getMonth() + 1
-        }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
+        const date = parseDate(new Date());
         setLastBackupDate(date);
         setLastBackupSize(size / 100000);
         if (isAutomatic) automaticCallBack();
@@ -128,7 +123,7 @@ class UserService {
    * @param {function} updateLastDateAndSize update last backup date and
    * size if restore successful
    */
-  restoreBackup(successful, failure, updateProgress, updateLastDateAndSize) {
+  restoreBackup(successful, failure, updateProgress) {
     getToken().then((token) => {
       FileSystem.createDownloadResumable(
         restoreAPI,
@@ -156,11 +151,11 @@ class UserService {
           ).then((res) => {
             if (response.status === 200) {
               this.handleFileCopy(
-                response.headers.Checksum,
+                response.headers,
                 res.md5,
                 successful,
                 failure,
-                updateLastDateAndSize
+                20
               );
             } else if (response.status === 404) {
               failure(
@@ -187,29 +182,32 @@ class UserService {
    * @param {string} clientChecksum md5 hash of file in file system
    * @param {function} successful called if copy is successful
    * @param {function} failure called if copy fails
-   * @param {function} updateLastDateAndSize update last backup date and
-   * size if copy is successful
+   * @param {int} retries number of times to retry copy if it fails
    */
   handleFileCopy(
-    serverChecksum,
+    headers,
     clientChecksum,
     successful,
     failure,
-    updateLastDateAndSize
+    retries
   ) {
-    if (serverChecksum.toLowerCase() === clientChecksum.toLowerCase()) {
-      FileSystem.moveAsync({
+    const { Checksum, Info } = headers;
+    const info = JSON.parse(Info);
+    if (Checksum.toLowerCase() === clientChecksum.toLowerCase()) {
+      FileSystem.copyAsync({
         from: FileSystem.documentDirectory + "SQLite/backup",
         to: FileSystem.documentDirectory + "SQLite/notes.db",
       })
         .then(() => {
-          updateLastDateAndSize();
+          close();
+          const date = parseDate(info.date);
+          setLastBackupDate(date);
+          setLastBackupSize(info.size / 100000);
           successful("Restore");
-          db._db.close();
         })
         .catch((error) => {
-          console.log(error);
-          failure("Restore");
+          if (retries > 0)
+            this.handleFileCopy(headers, clientChecksum, successful, failure, retries - 1);
         });
     } else {
       failure(
@@ -351,7 +349,6 @@ class UserService {
         timeout: this.timeout,
       })
       .then((response) => {
-        // console.log("Success:", response.data);
         success(response.data);
       })
       .catch((error) => {
@@ -409,7 +406,7 @@ class UserService {
       .catch((error) => {
         if (error.response && error.response.status === 400) {
           console.log(error.response);
-          failure("Invalid Credentials");
+          failure("Invalid Username or Password");
         } else {
           failure();
         }

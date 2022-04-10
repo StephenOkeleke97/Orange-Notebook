@@ -3,7 +3,11 @@ import { globalStyles } from "../styles/global";
 import { Icon } from "react-native-elements";
 import { useState } from "react";
 import UserService from "../services/UserService";
-import { setUser } from "../services/CurrentUser";
+import {
+  addTokenToAsyncStorage,
+  addUserEmailToAsyncStorage,
+  setUser,
+} from "../services/CurrentUser";
 import Loading from "../components/Loading";
 
 /**
@@ -120,8 +124,14 @@ export default function VerifyEmailScreen({ navigation, route }) {
         );
       },
 
-      onSuccess: function (data) {
-        setUser(email.trim(), data.token, this.onSetUser.bind(this));
+      onSuccess: async function (data) {
+        try {
+          await addUserEmailToAsyncStorage(email.trim());
+          await addTokenToAsyncStorage(data.token);
+        } catch (error) {
+          return this.onFailure();
+        }
+        setUser(email.trim(), this.onSetUser.bind(this));
       },
 
       onSetUser: function () {

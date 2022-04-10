@@ -11,8 +11,9 @@ import {
   updateNextBackUpDate,
   setLastBackupDate,
   setLastBackupSize,
+  parseDate,
 } from "../settings/settings";
-import UserService from "../services/UserService";
+import UserService, { setAuthHeader } from "../services/UserService";
 import { useEffect, useState } from "react";
 import { AppState } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -44,6 +45,8 @@ export default function HomeLoggedInScreen() {
     getUser().then((user) => {
       setUserEmail(user);
     });
+
+    setAuthHeader();
   }, [userEmail]);
 
   /**
@@ -106,24 +109,10 @@ export default function HomeLoggedInScreen() {
    */
   const updateLocalBackUpInfo = (data) => {
     if (data.date && data.size) {
-      const date = parseDateFromServer(data.date);
+      const date = parseDate(data.date);
       setLastBackupDate(date);
       setLastBackupSize(data.size / 100000);
     }
-  };
-
-  /**
-   * Parse date into desired format: yyyy-MM-dd hh:mm:ss
-   *
-   * @param {Date} date date to be parsed
-   * @returns parsed date
-   */
-  const parseDateFromServer = (date) => {
-    const temp = new Date(Date.parse(date));
-    const parsedDate = `${temp.getFullYear()}-${
-      temp.getMonth() + 1
-    }-${temp.getDate()} ${temp.getHours()}:${temp.getMinutes()}:${temp.getSeconds()}`;
-    return parsedDate;
   };
 
   /**
