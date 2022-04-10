@@ -1,6 +1,24 @@
 import { openDatabase } from "expo-sqlite";
 
-const db = openDatabase("notes.db");
+let db = openDatabase("notes.db");
+
+/**
+ * Get database object.
+ *
+ * @returns database object
+ */
+export function dB() {
+  return db;
+}
+
+/**
+ * Close the database connection.
+ */
+export function close() {
+  db._db.close();
+  db._db._closed = false;
+  db = openDatabase("notes.db");
+}
 
 /**
  * Enable foreign key support for sqlite db.
@@ -22,7 +40,6 @@ export function initializeDB() {
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       "CREATE TABLE IF NOT EXISTS Users(UserID INTEGER UNIQUE NOT NULL, UserEmail TEXT UNIQUE NOT NULL," +
         "BackupFrequency TEXT, BackupSize INTEGER, BackupDate DATE, NextBackUpDate INT, PRIMARY KEY(UserID), FOREIGN KEY (BackupFrequency) REFERENCES BackupFrequency(Frequency))",
@@ -30,7 +47,6 @@ export function initializeDB() {
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       "CREATE TABLE IF NOT EXISTS Settings(SettingName TEXT UNIQUE NOT NULL," +
         " SettingEnabled INTEGER NOT NULL, SettingSynced INTEGER, PRIMARY KEY(SettingName))",
@@ -38,7 +54,6 @@ export function initializeDB() {
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       "CREATE TABLE IF NOT EXISTS Category(CategoryName TEXT NOT NULL, " +
         "RedColor INT, GreenColor INT, BlueColor INT, PRIMARY KEY(CategoryName)) ",
@@ -46,7 +61,6 @@ export function initializeDB() {
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       "CREATE TABLE IF NOT EXISTS Notes(NotesID INTEGER UNIQUE NOT NULL, " +
         "Title TEXT, CategoryName TEXT, Label TEXT, Content TEXT, DateAdded DATE, TimeStamp INT, Deleted TEXT, Pinned TEXT, Synced TEXT," +
@@ -55,49 +69,42 @@ export function initializeDB() {
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       'INSERT OR IGNORE INTO Settings VALUES ("DetailedView", 1, 0)',
       [],
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       'INSERT OR IGNORE INTO Settings VALUES ("TwoFactor", 0, 0)',
       [],
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       'INSERT OR IGNORE INTO Settings VALUES ("BackupEnabled", 0, 0)',
       [],
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       'INSERT OR IGNORE INTO BackupFrequency VALUES ("Daily")',
       [],
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       'INSERT OR IGNORE INTO BackupFrequency VALUES ("Weekly")',
       [],
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       'INSERT OR IGNORE INTO BackupFrequency VALUES ("Monthly")',
       [],
       null,
       (t, error) => console.log(error)
     );
-
     tx.executeSql(
       'INSERT OR IGNORE INTO Category VALUES ("None", 209, 211, 212)',
       null,
@@ -115,19 +122,15 @@ export function dropTables() {
     tx.executeSql("DROP TABLE IF EXISTS Category", [], null, (t, error) =>
       console.log(error)
     );
-
     tx.executeSql("DROP TABLE IF EXISTS Notes", [], null, (t, error) =>
       console.log(error)
     );
-
     tx.executeSql("DROP TABLE IF EXISTS Settings", [], null, (t, error) =>
       console.log(error)
     );
-
     tx.executeSql("DROP TABLE IF EXISTS Users", [], null, (t, error) =>
       console.log(error)
     );
-
     tx.executeSql(
       "DROP TABLE IF EXISTS BackupFrequency",
       [],

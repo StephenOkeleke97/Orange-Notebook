@@ -28,10 +28,12 @@
       },
       "package": "com.orangenotes.orangenotes",
       "versionCode": 1,
-      "permissions" : []
+      "permissions": []
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
-  }
+    },
+    "sdkVersion": "44.0.0"
+  },
+  "name": "donewithit"
 }

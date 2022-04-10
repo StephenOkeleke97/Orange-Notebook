@@ -1,6 +1,4 @@
-import * as SQLite from "expo-sqlite";
-
-const db = SQLite.openDatabase("notes.db");
+import { dB } from "./SchemaScript";
 
 /**
  * Get list of categories in database.
@@ -9,7 +7,7 @@ const db = SQLite.openDatabase("notes.db");
  * in which result is passed to
  */
 export function selectCategories(selectCategoriesCallback) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "SELECT CategoryName FROM Category C",
       null,
@@ -32,7 +30,7 @@ export function selectCategories(selectCategoriesCallback) {
  * notes into new category if category was created with indirectly
  */
 export function createCategory(name, red, green, blue, updateNotesCallBack) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "INSERT INTO Category(CategoryName, RedColor, GreenColor, BlueColor) VALUES (" +
         "?, ?, ?, ?)",
@@ -67,7 +65,7 @@ export function updateNoteCategories(
 ) {
   if (retries > 0) {
     notes.forEach((note, index, array) => {
-      db.transaction((tx) => {
+      dB().transaction((tx) => {
         tx.executeSql(
           "UPDATE Notes SET CategoryName = ? WHERE NotesID = ?",
           [categoryName, note],
@@ -100,7 +98,7 @@ export function updateNoteCategories(
  * @param {string} oldName old category name
  */
 export function editCategory(name, red, green, blue, oldName) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "UPDATE Category SET CategoryName = ?, RedColor = ?, GreenColor = ?, BlueColor = ? " +
         "WHERE CategoryName = ?",
@@ -122,7 +120,7 @@ export function editCategory(name, red, green, blue, oldName) {
  */
 export function deleteCategory(selectedCategories, deleteCategoryCallBack) {
   selectedCategories.forEach((categoryName) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         'UPDATE Notes SET CategoryName = "None", Deleted = "true" WHERE CategoryName = ?',
         [categoryName],
@@ -155,7 +153,7 @@ export function deleteCategory(selectedCategories, deleteCategoryCallBack) {
  * retrieved.
  */
 export function updateCategoryList(updateCallback) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "SELECT COUNT(NotesID) AS NumOfNotes, C.CategoryName, RedColor, GreenColor, BlueColor " +
         "FROM Category C LEFT JOIN Notes N on C.CategoryName = N.CategoryName " +
@@ -181,7 +179,7 @@ export function updateCategoryList(updateCallback) {
  * @param {int} id note id
  */
 export function editNote(titleText, labelText, contentText, date, id) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "UPDATE Notes SET Title = ?, Label = ?, Content = ?, DateAdded = ? WHERE NotesID = ?",
       [titleText, labelText, contentText, date, id],
@@ -209,7 +207,7 @@ export function createNewNote(
   date,
   time
 ) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "INSERT INTO Notes(Title, CategoryName, Label, Content, DateAdded, TimeStamp, Deleted, Pinned, Synced) VALUES (" +
         '?, ?, ?, ?, ?, ?, "false", "false", "false")',
@@ -229,7 +227,7 @@ export function createNewNote(
  * successfully
  */
 export function selectAllNotes(deleted, pinned, allNoteCallback) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor " +
         "FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName  " +
@@ -251,7 +249,7 @@ export function selectAllNotes(deleted, pinned, allNoteCallback) {
  * @param {function} noteCategoryCallback callback called after notes retrieved
  */
 export function selectNotesOfCategory(pinned, category, noteCategoryCallback) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "SELECT NotesID, Title, Content, N.CategoryName, Label, DateAdded, RedColor, GreenColor, BlueColor " +
         "FROM Notes N LEFT JOIN Category C ON N.CategoryName = C.CategoryName " +
@@ -272,7 +270,7 @@ export function selectNotesOfCategory(pinned, category, noteCategoryCallback) {
  */
 export function deleteNotes(selectedNotes) {
   selectedNotes.forEach((noteID) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         'UPDATE Notes SET Deleted = "true", CategoryName =' +
           '"None", Pinned = "false" WHERE NotesID = ?',
@@ -291,7 +289,7 @@ export function deleteNotes(selectedNotes) {
  */
 export function restoreDeletedNotes(selectedNotes) {
   selectedNotes.forEach((noteID) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         'UPDATE Notes SET Deleted = "false" WHERE NotesID = ?',
         [noteID],
@@ -310,7 +308,7 @@ export function restoreDeletedNotes(selectedNotes) {
  */
 export function pinNotes(selectedNotes, pinned) {
   selectedNotes.forEach((noteID) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "UPDATE Notes SET Pinned = ? WHERE NotesID = ?",
         [pinned, noteID],
@@ -329,7 +327,7 @@ export function pinNotes(selectedNotes, pinned) {
  */
 export function permanentDelete(selectedNotes) {
   selectedNotes.forEach((noteID) => {
-    db.transaction((tx) => {
+    dB().transaction((tx) => {
       tx.executeSql(
         "DELETE FROM Notes WHERE NotesID = ?",
         [noteID],
@@ -348,7 +346,7 @@ export function permanentDelete(selectedNotes) {
  * @param {boolean} isEnabled true to enable and false to disable
  */
 export function setTwoFactor(isEnabled) {
-  db.transaction((tx) => {
+  dB().transaction((tx) => {
     tx.executeSql(
       "UPDATE Settings Set SettingEnabled = ? WHERE SettingName = 'TwoFactor'",
       [isEnabled],

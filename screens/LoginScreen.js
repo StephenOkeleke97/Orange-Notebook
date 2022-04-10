@@ -12,7 +12,11 @@ import { Icon } from "react-native-elements";
 import { globalStyles } from "../styles/global.js";
 import { HideKeyboard } from "../components/HideKeyboard.js";
 import UserService from "../services/UserService.js";
-import { setUser } from "../services/CurrentUser.js";
+import {
+  addTokenToAsyncStorage,
+  addUserEmailToAsyncStorage,
+  setUser,
+} from "../services/CurrentUser.js";
 import Loading from "../components/Loading.js";
 
 /**
@@ -77,8 +81,14 @@ export default function LoginScreen({ navigation }) {
    *
    * @param {Object} data object containing jwt token
    */
-  const loginSuccess = (data) => {
-    setUser(email.trim(), data.token, onSetUser);
+  const loginSuccess = async (data) => {
+    try {
+      await addUserEmailToAsyncStorage(email.trim());
+      await addTokenToAsyncStorage(data.token);
+    } catch (error) {
+      return failure();
+    }
+    setUser(email.trim(), onSetUser);
   };
 
   const failure = (
