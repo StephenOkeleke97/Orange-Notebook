@@ -131,7 +131,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
         } catch (error) {
           return this.onFailure();
         }
-        setUser(email.trim(), this.onSetUser.bind(this));
+        setUser(email.trim(), data.twoFactor, this.onSetUser.bind(this));
       },
 
       onSetUser: function () {

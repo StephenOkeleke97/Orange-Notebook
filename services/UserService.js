@@ -55,7 +55,7 @@ class UserService {
   /**
    * Request timeout.
    */
-  timeout = 10000;
+  timeout = 60000;
 
   /**
    * Back up database to server.

@@ -351,7 +351,7 @@ export function setTwoFactor(isEnabled) {
       "UPDATE Settings Set SettingEnabled = ? WHERE SettingName = 'TwoFactor'",
       [isEnabled],
       null,
-      (t, error) => console.log("Error in permanent delete:", error)
+      (t, error) => console.log("Error in set two factor:", error)
     );
   });
 }

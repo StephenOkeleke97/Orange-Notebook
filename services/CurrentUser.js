@@ -1,5 +1,4 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import UserService from "./UserService";
 import { setTwoFactor } from "../db/queries";
 import { dB } from "../db/SchemaScript";
 
@@ -8,12 +7,12 @@ import { dB } from "../db/SchemaScript";
  * Async storage.
  *
  * @param {string} email user email
- * @param {string} token jwt token
- * @param {function} success callbacl called after
+ * @param {boolean} twoFactor two factor status of user
+ * @param {function} success callback called after
  * successful storage
  */
-export function setUser(email, success) {
-  syncTwoFactor(email);
+export function setUser(email, twoFactor, success) {
+  syncTwoFactor(twoFactor);
   dB().transaction((tx) => {
     tx.executeSql(
       "INSERT OR IGNORE INTO Users(UserEmail, BackupFrequency, " +
@@ -50,10 +49,8 @@ export async function addTokenToAsyncStorage(token) {
 /**
  * Sync 2fa setting from server with local db.
  *
- * @param {string} email user email
+ * @param {boolean} twoFactor user two factor auth status
  */
-function syncTwoFactor(email) {
-  UserService.getTwoFactor(email, (enabled) => {
-    setTwoFactor(enabled);
-  });
+function syncTwoFactor(twoFactor) {
+  setTwoFactor(twoFactor);
 }

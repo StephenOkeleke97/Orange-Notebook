@@ -88,7 +88,7 @@ export default function LoginScreen({ navigation }) {
     } catch (error) {
       return failure();
     }
-    setUser(email.trim(), onSetUser);
+    setUser(email.trim(), data.twoFactor, onSetUser);
   };
 
   const failure = (
