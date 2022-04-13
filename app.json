@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Orange Notes",
-    "slug": "orange-notes",
-    "version": "1.0.0",
+    "name": "Orange Notebook",
+    "slug": "orange-notebook",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "splash": {
@@ -17,7 +17,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "com.orangenotes.orangenotes",
       "buildNumber": "1.0.0"
     },

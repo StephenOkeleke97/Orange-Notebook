@@ -35,7 +35,7 @@ const MyTheme = {
 };
 
 export default function App() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState("loading");
   /**
    * Indicates if assets have been loaded.
    */
@@ -101,7 +101,7 @@ export default function App() {
    * Display splash screen while resources are
    * being loaded.
    */
-  if (!isLoaded || !fontLoaded) {
+  if (!isLoaded || !fontLoaded || isLoggedIn === "loading") {
     return <AppLoading />;
   }
 

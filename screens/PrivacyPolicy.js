@@ -61,7 +61,7 @@ const PrivacyPolicy = ({ navigation }) => {
               PLEASE READ THIS POLICY CAREFULLY
             </Text>
             <Text style={styles.policyText}>
-              Stephen Okeleke built the Orange Notes app as a Free app. This
+              Stephen Okeleke built the Orange Notebook app as a Free app. This
               SERVICE is provided by Stephen Okeleke at no cost and is intended
               for use as is. This page is used to inform visitors regarding my
               policies with the collection, use, and disclosure of Personal
@@ -72,7 +72,7 @@ const PrivacyPolicy = ({ navigation }) => {
               will not use or share your information with anyone except as
               described in this Privacy Policy. The terms used in this Privacy
               Policy have the same meanings as in our Terms and Conditions,
-              which are accessible at Orange Notes unless otherwise defined in
+              which are accessible at Orange Notebook unless otherwise defined in
               this Privacy Policy.
             </Text>
 
