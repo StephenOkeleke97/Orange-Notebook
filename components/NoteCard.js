@@ -1,9 +1,37 @@
 import { View, StyleSheet, Text } from "react-native";
 import { Icon } from "react-native-elements";
-import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 import { TouchableOpacity } from "react-native";
 
+/**
+ * A component representing a card summary of notes.
+ * Rendered when detailed view is enabled. 
+ * Shows a more detailed display of notes than the
+ * NoteCardSlim component.
+ *
+ * @param {int} id note id
+ * @param {int} index index of note. Useful because the first
+ * note item shows more information than the rest
+ * @param {string} title title of note
+ * @param {string} content note content
+ * @param {string} category note category
+ * @param {string} label note label
+ * @param {date} date date of creation or last edit
+ * @param {boolean} getSelectMode select mode active
+ * @param {boolean} setSelectMode trigger select mode. This is useful
+ * in this component because a long press of a component triggers select mode
+ * @param {int} redColor red component of rgb color of category
+ * @param {int} greenColor green component of rgb color of category
+ * @param {int} blueColor blue component of rgb color of category
+ * @param {function} addToSelectedNotes add note to selected notes
+ * @param {function} removeFromSelectedNotes remove note from selected notes
+ * @param {function} getSelected get selected flag from parent. Useful to indicate
+ * when all notes are selected
+ * @param {boolean} triggerSelectAll boolean attribute that changes everytime
+ * the select all variable from parent if triggered
+ * @param {Object} navigate navigation object
+ * @returns
+ */
 export default function NodeCard({
   id,
   index,
@@ -23,7 +51,15 @@ export default function NodeCard({
   triggerSelectAll,
   navigate,
 }) {
+  /**
+   * Indicates whether or not a note is selected.
+   */
   const [selected, setSelected] = useState(false);
+
+  /**
+   * Called everytime select mode or select all variable from
+   * parent is changed.
+   */
   useEffect(() => {
     if (getSelectMode() === false) {
       setSelected(false);
@@ -32,6 +68,11 @@ export default function NodeCard({
     }
   }, [triggerSelectAll, getSelectMode()]);
 
+  /**
+   * Add or remove note from selected notes if
+   * select mode is enabled. If not enabled,
+   * go to CreateNotesScreen to view/ edit note.
+   */
   const noteClick = () => {
     if (getSelectMode()) {
       if (!selected) {
@@ -45,15 +86,8 @@ export default function NodeCard({
     }
   };
 
+  //REVIEW
   const selectMode = getSelectMode();
-  const [loaded] = useFonts({
-    Overpass: require("../assets/fonts/Overpass-Regular.ttf"),
-    OverpassBold: require("../assets/fonts/Overpass-SemiBold.ttf"),
-  });
-
-  if (!loaded) {
-    return null;
-  }
 
   return (
     <TouchableOpacity

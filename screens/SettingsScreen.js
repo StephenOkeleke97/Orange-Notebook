@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -14,18 +14,42 @@ import {
   toggleDetailedDisplay,
   getTwoFactor,
   toggleTwoFactor,
-  syncWithLocalDB,
   deleteUser,
-  logOut,
-} from "./settings.js";
+} from "../settings/settings.js";
 import { useFocusEffect } from "@react-navigation/native";
 import UserService from "../services/UserService.js";
-import CurrentUser from "../services/CurrentUser";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNetInfo } from "@react-native-community/netinfo";
+import Loading from "../components/Loading.js";
 
+/**
+ * Screen to handle settings interactions.
+ *
+ * @param {Object} navigation navigation object
+ * @returns SettingsScreen
+ */
 export default function SettingsScreen({ navigation }) {
+  const netInfo = useNetInfo();
   const [isDetailedEnabled, setIsDetailedEnabled] = useState(false);
   const [twoFactor, setTwoFactor] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [loading, setLoading] = useState(false);
 
+  /**
+   * Indicates whether or not component is mounted.
+   */
+  let isMounted = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  /**
+   * Get detailed view and two factor enabled
+   * setting when screen is focused.
+   */
   useFocusEffect(
     React.useCallback(() => {
       getDetailedDisplay(setDetailEnabledCallBack);
@@ -33,12 +57,50 @@ export default function SettingsScreen({ navigation }) {
     })
   );
 
-  const setDetailEnabledCallBack = (bool) => {
-    setIsDetailedEnabled(bool);
+  /**
+   * Get user email.
+   */
+  useEffect(() => {
+    getUser().then((user) => {
+      setUserEmail(user);
+    });
+  }, [userEmail]);
+
+  /**
+   * Get user from AsyncStorage.
+   *
+   * @returns promise that returns user if fulfilled
+   */
+  const getUser = async () => {
+    let user;
+    try {
+      user = await AsyncStorage.getItem("email");
+    } catch (error) {
+      console.log(error);
+    }
+    return user;
   };
 
+  /**
+   * Update detailedEnabled variable when
+   * database is updated.
+   *
+   * @param {boolean} bool true if detailed view is enabled
+   * or false otherwise
+   */
+  const setDetailEnabledCallBack = (bool) => {
+    if (isMounted.current) setIsDetailedEnabled(bool);
+  };
+
+  /**
+   * Update twoFactor variable when
+   * database is updated.
+   *
+   * @param {boolean} bool true if mfa is enabled
+   * or false otherwise
+   */
   const setTwoFactorCallBack = (bool) => {
-    setTwoFactor(bool);
+    if (isMounted.current) setTwoFactor(bool);
   };
 
   const handleNavigateToBackupSettings = () => {
@@ -49,18 +111,47 @@ export default function SettingsScreen({ navigation }) {
     toggleDetailedDisplay(setDetailEnabledCallBack);
   };
 
+  /**
+   * Toggle two factor setting. Setting must be synced with
+   * database, hence, internet connectivity is required.
+   */
   const toggleTwoFactorEnabled = () => {
-    toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack);
+    if (netInfo.isConnected)
+      toggleTwoFactor(setTwoFactorCallBack, syncWithServerCallBack);
+    else
+      Alert.alert(
+        "No Internet",
+        "Internet connectivity is required to perform this action"
+      );
   };
 
+  /**
+   * Sync two factor setting with server.
+   *
+   * @param {*} bool true if two factor enabled or
+   * false otherwise
+   */
   const syncWithServerCallBack = (bool) => {
-    UserService.enableTwoFactor(
-      CurrentUser.prototype.getUser(),
-      bool,
-      syncWithLocalDB
-    );
+    UserService.enableTwoFactor(userEmail, bool, enableTwoFactorError);
   };
 
+  /**
+   * Revert setting if sync with server
+   * not completed.
+   */
+  const enableTwoFactorError = () => {
+    const action = twoFactor ? "Disable" : "Enable";
+    Alert.alert(
+      `Failed to ${action} 2FA`,
+      "Something went wrong. Please try again later"
+    );
+    //Revert
+    toggleTwoFactor(setTwoFactorCallBack, () => {});
+  };
+
+  /**
+   * Delete user account. Prompts confirmation.
+   */
   const handleDeleteAccount = () => {
     Alert.alert(
       "Confirm Delete",
@@ -76,38 +167,38 @@ export default function SettingsScreen({ navigation }) {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            UserService.delete(
-              CurrentUser.prototype.getUser(),
-              handleDeleteFromLocalAndLogOut
-            );
+            setLoading(true);
+            UserService.delete(deleteSuccessful, deleteFailure);
           },
         },
       ]
     );
   };
 
-  const handleDeleteFromLocalAndLogOut = () => {
+  /**
+   * Delete local database after successful
+   * delete from server.
+   */
+  const deleteSuccessful = () => {
+    //Delete Local
     deleteUser(() => {
-      navigation.navigate("Home");
+      setLoading(false);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Home" }],
+      });
     });
   };
 
-  const handleLogOut = () => {
-    Alert.alert("Log out", "You will be logged out of your account", [
-      {
-        text: "Cancel",
-        style: "cancel",
-      },
+  const deleteFailure = (
+    message = `Something went wrong. Please try again later`
+  ) => {
+    setLoading(false);
+    Alert.alert("Delete Account Failed", message);
+  };
 
-      {
-        text: "Log out",
-        onPress: () => {
-          logOut(() => {
-            navigation.navigate("Home");
-          });
-        },
-      },
-    ]);
+  const openPrivacyPolicy = () => {
+    navigation.navigate("Privacy");
   };
 
   return (
@@ -169,11 +260,13 @@ export default function SettingsScreen({ navigation }) {
         <TouchableOpacity
           style={styles.settingsComponent}
           activeOpacity={0.5}
-          onPress={handleLogOut}
+          onPress={openPrivacyPolicy}
         >
-          <Text style={styles.settingsText}>Log out</Text>
+          <Text style={styles.settingsText}>Privacy Policy</Text>
+          <Icon name="chevron-right" type="material-community" color="#000" />
         </TouchableOpacity>
       </View>
+      {loading && <Loading />}
     </View>
   );
 }

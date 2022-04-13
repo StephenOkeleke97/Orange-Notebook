@@ -1,19 +1,24 @@
 import { Text, View, Image, StyleSheet, TouchableOpacity } from "react-native";
 import { globalStyles } from "../styles/global";
 
+/**
+ * Application home screen.
+ * @param {Object} navigation navigation object 
+ * @returns 
+ */
 export default function HomeScreen({ navigation }) {
   return (
     <View style={globalStyles.container}>
       <View style={styles.logoView}>
         <Image
-          source={require("../assets/notes.png")}
+          source={require("../assets/images/homeImage1.png")}
           style={styles.homeImage}
         />
       </View>
       <View style={styles.welcomeView}>
-        <Text style={globalStyles.headerText}>Welcome to Notes!</Text>
+        <Text style={globalStyles.headerText}>Welcome to Orange Notebook!</Text>
         <Text style={styles.welcomeBodyText}>
-          Easily Manage Your Notes On Your Phone & You Can Have Infinite Notes
+          Easily Manage Your Notes On Your Phone & You Can Have Infinite Notes Too
         </Text>
         <TouchableOpacity
           style={globalStyles.yellowButton}
@@ -42,8 +47,8 @@ const styles = StyleSheet.create({
   },
 
   homeImage: {
-    width: 450,
-    height: 450,
+    width: 300,
+    height: 300,
     marginTop: 30,
   },
 

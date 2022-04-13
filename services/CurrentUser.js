@@ -1,34 +1,56 @@
-import * as SQLite from "expo-sqlite";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { setTwoFactor } from "../db/queries";
+import { dB } from "../db/SchemaScript";
 
-const db = SQLite.openDatabase("notes.db");
+/**
+ * Store user and authentication token to
+ * Async storage.
+ *
+ * @param {string} email user email
+ * @param {boolean} twoFactor two factor status of user
+ * @param {function} success callback called after
+ * successful storage
+ */
+export function setUser(email, twoFactor, success) {
+  syncTwoFactor(twoFactor);
+  dB().transaction((tx) => {
+    tx.executeSql(
+      "INSERT OR IGNORE INTO Users(UserEmail, BackupFrequency, " +
+        'NextBackUpDate) VALUES (?, "Daily", 0)',
+      [email],
+      (t, res) => {
+        success();
+      },
+      (t, error) => {
+        console.log(error);
+      }
+    );
+  });
+}
 
-export default class CurrentUser {
-  currentUser = "";
+/**
+ * Add user email to AsyncStorage.
+ *
+ * @param {string} email user email
+ */
+export async function addUserEmailToAsyncStorage(email) {
+  await AsyncStorage.setItem("email", email);
+}
 
-  setUser(email) {
-    this.currentUser = email;
+/**
+ * Add auth token to AsyncStorage.
+ *
+ * @param {string} token jwt token
+ */
+export async function addTokenToAsyncStorage(token) {
+  await AsyncStorage.setItem("jwt", token);
+}
 
-    db.transaction((tx) => {
-      tx.executeSql(
-        "INSERT OR IGNORE INTO Users(UserEmail, BackupFrequency, " +
-          'LoggedIn, NextBackUpDate) VALUES (?, "Daily", 1, 0)',
-        [email],
-        null,
-        (t, error) => {
-          console.log(error);
-        }
-      );
-
-      tx.executeSql(
-        'INSERT OR IGNORE INTO Category VALUES ("None", ?, 209, 211, 212)',
-        [email],
-        null,
-        (t, error) => console.log(error)
-      );
-    });
-  }
-
-  getUser() {
-    return this.currentUser;
-  }
+/**
+ * Sync 2fa setting from server with local db.
+ *
+ * @param {boolean} twoFactor user two factor auth status
+ */
+function syncTwoFactor(twoFactor) {
+  setTwoFactor(twoFactor);
 }

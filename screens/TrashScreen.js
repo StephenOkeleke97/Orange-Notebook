@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import { useFocusEffect } from "@react-navigation/native";
 import { TouchableOpacity } from "react-native";
 import { Icon } from "react-native-elements";
-import NoteCardSlim from "./NoteCardSlim.js";
-import CurrentUser from "../services/CurrentUser.js";
+import NoteCardSlim from "../components/NoteCardSlim.js";
 import {
   permanentDelete,
   restoreDeletedNotes,
   selectAllNotes,
-} from "./queries.js";
+} from "../db/queries.js";
 
+/**
+ * Recently deleted screen.
+ *
+ * @returns TrashScreen
+ */
 export default function TrashScreen() {
   const [filteredNotes, setFilteredNotes] = useState([]);
   const [searchedText, setSearchedText] = useState("");
@@ -21,40 +25,39 @@ export default function TrashScreen() {
   const [selected, setSelected] = useState(false);
   const [triggerSelectAll, setTriggerSelectAll] = useState(false);
 
+  /**
+   * Get deleted notes on focus.
+   */
   useFocusEffect(
     React.useCallback(() => {
       setSearchedText("");
-      selectAllNotes(
-        "true",
-        "false",
-        CurrentUser.prototype.getUser(),
-        (array) => {
-          setFilteredNotes(
-            array.filter((note) =>
-              note.Content.toLowerCase().includes(searchedText.toLowerCase())
-            )
-          );
-        }
-      );
+      selectAllNotes("true", "false", onSelectAllNotes);
       setSelectMode(false);
       setSelected(false);
     }, [])
   );
 
+  /**
+   * Select deleted notes to reflect
+   * searched text.
+   */
   useEffect(() => {
-    selectAllNotes(
-      "true",
-      "false",
-      CurrentUser.prototype.getUser(),
-      (array) => {
-        setFilteredNotes(
-          array.filter((note) =>
-            note.Content.toLowerCase().includes(searchedText.toLowerCase())
-          )
-        );
-      }
-    );
+    selectAllNotes("true", "false", onSelectAllNotes);
   }, [searchedText]);
+
+  /**
+   * Callback to filtered notes with result
+   * from database.
+   *
+   * @param {array} array deleted notes from database
+   */
+  const onSelectAllNotes = (array) => {
+    setFilteredNotes(
+      array.filter((note) =>
+        note.Content.toLowerCase().includes(searchedText.toLowerCase())
+      )
+    );
+  };
 
   const getSelectMode = () => {
     return selectMode;
@@ -65,11 +68,21 @@ export default function TrashScreen() {
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Add noteID to selected notes list.
+   *
+   * @param {int} noteID note id to be added
+   */
   const addToSelectedNotes = (noteID) => {
     selectedNotes.push(noteID);
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Remove noteID from selected notes list.
+   *
+   * @param {int} noteID note id to be removed
+   */
   const removeFromSelectedNotes = (noteID) => {
     const index = selectedNotes.indexOf(noteID);
     if (index > -1) {
@@ -78,46 +91,32 @@ export default function TrashScreen() {
     setReRenderOnSelect(!reRenderOnSelect);
   };
 
+  /**
+   * Permanently deleted selected notes from
+   * database.
+   */
   const deleteSelectedNotes = () => {
     if (selectedNotes.length > 0) {
       permanentDelete(selectedNotes);
-
-      selectAllNotes(
-        "true",
-        "false",
-        CurrentUser.prototype.getUser(),
-        (array) => {
-          setFilteredNotes(
-            array.filter((note) =>
-              note.Content.toLowerCase().includes(searchedText.toLowerCase())
-            )
-          );
-        }
-      );
+      selectAllNotes("true", "false", onSelectAllNotes);
     }
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Restore selected notes.
+   */
   const restoreSelectedNotes = () => {
     if (selectedNotes.length > 0) {
       restoreDeletedNotes(selectedNotes);
-
-      selectAllNotes(
-        "true",
-        "false",
-        CurrentUser.prototype.getUser(),
-        (array) => {
-          setFilteredNotes(
-            array.filter((note) =>
-              note.Content.toLowerCase().includes(searchedText.toLowerCase())
-            )
-          );
-        }
-      );
+      selectAllNotes("true", "false", onSelectAllNotes);
     }
     setSelectMode(!selectMode);
   };
 
+  /**
+   * Select all notes.
+   */
   const selectAll = () => {
     setSelected(true);
     setTriggerSelectAll(!triggerSelectAll);
@@ -129,6 +128,12 @@ export default function TrashScreen() {
     return selected;
   };
 
+  /**
+   * Render NoteCardSlim in flastlist.
+   *
+   * @param {Object} item note object
+   * @returns NoteCardSlim component
+   */
   const renderItem = ({ item }) => (
     <NoteCardSlim
       id={item.NotesID}
@@ -235,11 +240,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
 
-  homeImage: {
-    width: 35,
-    height: 35,
-  },
-
   titleText: {
     fontSize: 20,
     fontFamily: "LatoBold",
@@ -280,13 +280,6 @@ const styles = StyleSheet.create({
     paddingTop: 15,
     paddingLeft: 15,
     paddingRight: 15,
-  },
-
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "flex-end",
-    width: "50%",
   },
 
   activeTabTitle: {

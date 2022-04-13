@@ -4,46 +4,74 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useState } from "react";
 import { Icon } from "react-native-elements";
 import { useFonts } from "expo-font";
 import { globalStyles } from "../styles/global.js";
-import { HideKeyboard } from "./HideKeyboard.js";
+import { HideKeyboard } from "../components/HideKeyboard.js";
 import UserService from "../services/UserService.js";
+import Loading from "../components/Loading.js";
 
+/**
+ * Screen to register a user account.
+ *
+ * @param {Object} navigation navigation object
+ * @returns
+ */
 export default function CreateAccountScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  /**
+   * Indicates an error in the email address.
+   */
   const [emailIsError, setEmailIsError] = useState(false);
+  /**
+   * Indicates an error in the password.
+   */
   const [passwordIsError, setPasswordIsError] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  /**
+   * Regex to match password format. Uppercase letter,
+   * Lowercase letter, number, special character and length >= 8.
+   */
   const verifyPassword =
     /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
   const validator = require("email-validator");
 
-  const [loaded] = useFonts({
-    LatoRegular: require("../assets/fonts/Lato-Regular.ttf"),
-    LatoBold: require("../assets/fonts/Lato-Bold.ttf"),
-  });
-
-  if (!loaded) {
-    return null;
-  }
-
   const onSubmit = () => {
-    const pEmail = email.trim();
-    if (!validator.validate(pEmail)) {
+    if (!validator.validate(email.trim())) {
       setEmailIsError(true);
     } else if (!verifyPassword.test(password)) {
       setPasswordIsError(true);
     } else {
-      UserService.addUser(pEmail, password, () => {
-        navigation.navigate("VerifyEmail", {
-          email: pEmail,
-        });
-      });
+      setLoading(true);
+      UserService.register(email.trim(), password, registerSuccessful, failure);
     }
+  };
+
+  /**
+   * Callback to handle successful registeration.
+   * Navigate to verify email to enable account.
+   */
+  const registerSuccessful = () => {
+    setLoading(false);
+    navigation.navigate("VerifyEmail", {
+      source: "Register",
+      email: email.trim(),
+      password: password,
+    });
+  };
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    setLoading(false);
+    Alert.alert("Create Account Failed", message);
   };
 
   return (
@@ -130,6 +158,7 @@ export default function CreateAccountScreen({ navigation }) {
           </TouchableOpacity>
           <View style={styles.separator} />
         </View>
+        {loading && <Loading />}
       </View>
     </HideKeyboard>
   );
@@ -146,14 +175,6 @@ const styles = StyleSheet.create({
 
   closeIcon: {
     paddingLeft: 20,
-  },
-
-  registerLaterText: {
-    paddingRight: 20,
-    color: "#808285",
-    fontWeight: "500",
-    fontFamily: "LatoRegular",
-    fontSize: 16,
   },
 
   loginPageHeader: {

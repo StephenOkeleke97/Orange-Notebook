@@ -12,8 +12,17 @@ import {
 import { Icon } from "react-native-elements";
 import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
+import Loading from "../components/Loading";
 
+/**
+ * Screen to create new password.
+ * 
+ * @param {Object} navigation navigation object 
+ * @param {Object} route route object 
+ * @returns CreateNewPasswordScreen component
+ */
 const CreateNewPasswordScreen = ({ navigation, route }) => {
+  const { email, code } = route.params;
   const verifyPassword =
     /^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$/;
   const [password, setPassword] = useState("");
@@ -22,6 +31,7 @@ const CreateNewPasswordScreen = ({ navigation, route }) => {
   const [invalidPassword, setInvalidPassword] = useState(false);
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleCreatePassword = () => {
     if (!verifyPassword.test(password)) {
@@ -29,13 +39,29 @@ const CreateNewPasswordScreen = ({ navigation, route }) => {
     } else if (confirmPassword !== password) {
       setNotMatch(true);
     } else {
-      setTimeout(() => {
-        UserService.resetPassword(route.params.email, password, () => {
-          Alert.alert("Confirmation", "Your password has been reset");
-          navigation.navigate("Login");
-        });
-      }, 2000);
+      setLoading(true);
+      UserService.resetPassword(
+        email,
+        password,
+        code,
+        resetSuccessful,
+        failure
+      );
     }
+  };
+
+  const resetSuccessful = () => {
+    setLoading(false);
+    Alert.alert("Confirmation", "Your password has been reset");
+    navigation.navigate("Login");
+  };
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    setLoading(false);
+    Alert.alert("Reset Password Failed", message);
   };
 
   return (
@@ -131,6 +157,7 @@ const CreateNewPasswordScreen = ({ navigation, route }) => {
             <Text style={globalStyles.buttonText}>Create Password</Text>
           </TouchableOpacity>
         </View>
+        {loading && <Loading />}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -147,11 +174,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-  },
-
-  backButtonText: {
-    marginLeft: 5,
-    fontWeight: "500",
   },
 
   headerContainer: {

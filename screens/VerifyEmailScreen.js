@@ -1,13 +1,27 @@
-import { View, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { View, TouchableOpacity, StyleSheet, Text, Alert } from "react-native";
 import { globalStyles } from "../styles/global";
 import { Icon } from "react-native-elements";
 import { useState } from "react";
 import UserService from "../services/UserService";
-import CurrentUser from "../services/CurrentUser";
-import { initializeSettings, saveLogIn } from "./settings";
+import {
+  addTokenToAsyncStorage,
+  addUserEmailToAsyncStorage,
+  setUser,
+} from "../services/CurrentUser";
+import Loading from "../components/Loading";
 
+/**
+ * Verify Email Screen. This Screen is
+ * utilized by 3 components. Login, Register and
+ * Reset password. As such, a source parameter is required.
+ *
+ * @param {Object} navigation navigation object
+ * @param {Object} route route object
+ * @returns VerifyEmailScreen
+ */
 export default function VerifyEmailScreen({ navigation, route }) {
-  const { email } = route.params;
+  const [loading, setLoading] = useState(false);
+  const { email, password } = route.params;
   const numList = [
     [1, 2, 3],
     [4, 5, 6],
@@ -17,10 +31,17 @@ export default function VerifyEmailScreen({ navigation, route }) {
   const [num2, setNum2] = useState("");
   const [num3, setNum3] = useState("");
   const [num4, setNum4] = useState("");
+  const verificationCode = `${num1}` + `${num2}` + `${num3}` + `${num4}`;
   const [currentNum, setCurrentNum] = useState(1);
   const [nextNum, setNextNum] = useState(1);
   const [errorText, setErrorText] = useState("");
 
+  /**
+   * Write to custom keypad.
+   *
+   * @param {int} next next key pad box
+   * @param {int} num number to write
+   */
   const setNum = (next, num) => {
     if (next === 1) {
       setNum1(num);
@@ -41,6 +62,9 @@ export default function VerifyEmailScreen({ navigation, route }) {
     }
   };
 
+  /**
+   * Delete from custom keybad
+   */
   const deleteNum = () => {
     if (currentNum === 1) {
       setNum1("");
@@ -61,25 +85,130 @@ export default function VerifyEmailScreen({ navigation, route }) {
   };
 
   const onSubmit = () => {
-    const verificationCode = `${num1}` + `${num2}` + `${num3}` + `${num4}`;
     if (verificationCode.length < 4) {
       setErrorText("Code must have 4 digits");
     } else {
-      UserService.verifyUser(email, verificationCode, handleNavigation);
+      setLoading(true);
+      handleSubmit();
     }
   };
 
-  const handleNavigation = () => {
-    if (route.params.source === "ResetPassword") {
-      navigation.navigate("CreatePassword", {
-        email: email,
-      });
+  /**
+   * Handle submit action based on source.
+   */
+  const handleSubmit = () => {
+    const source = route.params.source;
+
+    if (source.toLowerCase() === "login") {
+      verifyFunctionWrapper.login.onSubmit();
+    } else if (source.toLowerCase() === "reset") {
+      verifyFunctionWrapper.reset.onSubmit();
     } else {
-      CurrentUser.prototype.setUser(email);
-      initializeSettings();
-      saveLogIn(email);
-      navigation.navigate("HomeLoggedIn");
+      verifyFunctionWrapper.register.onSubmit();
     }
+  };
+
+  /**
+   * Object holding functions to handle actions
+   * of the 3 sources: login, register and reset password.
+   */
+  const verifyFunctionWrapper = {
+    login: {
+      onSubmit: function () {
+        UserService.login(
+          email,
+          password,
+          verificationCode,
+          this.onSuccess.bind(this),
+          this.onFailure.bind(this)
+        );
+      },
+
+      onSuccess: async function (data) {
+        try {
+          await addUserEmailToAsyncStorage(email.trim());
+          await addTokenToAsyncStorage(data.token);
+        } catch (error) {
+          return this.onFailure();
+        }
+        setUser(email.trim(), data.twoFactor, this.onSetUser.bind(this));
+      },
+
+      onSetUser: function () {
+        setLoading(false);
+        navigation.navigate("HomeLoggedIn");
+      },
+
+      onFailure: function (
+        message = `Something went wrong. 
+      Please try again later`
+      ) {
+        setLoading(false);
+        Alert.alert("Login Failed", message);
+      },
+    },
+
+    reset: {
+      onSubmit: function () {
+        setLoading(false);
+        navigation.navigate("CreatePassword", {
+          email: email,
+          code: verificationCode,
+        });
+      },
+    },
+
+    register: {
+      onSubmit: function () {
+        UserService.enableAccount(
+          email,
+          verificationCode,
+          this.onSuccess,
+          this.onFailure
+        );
+      },
+
+      onSuccess: function () {
+        setLoading(false);
+        Alert.alert(
+          "Account Created",
+          "Log in to your account with your email and password"
+        );
+        navigation.reset({
+          index: 0,
+          routes: [{ name: "Home" }],
+        });
+      },
+
+      onFailure: function (
+        message = `Something went wrong. 
+      Please try again later`
+      ) {
+        setLoading(false);
+        Alert.alert("Create Account Failed", message);
+      },
+    },
+  };
+
+  /**
+   * Request new verification code.
+   */
+  const handleRequestCode = () => {
+    setLoading(true);
+    UserService.requestCode(email, tokenRequestSuccessful, failure);
+  };
+
+  const tokenRequestSuccessful = () => {
+    setLoading(false);
+    Alert.alert("Code Sent");
+  };
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    setLoading(false);
+    Alert.alert("Code Request Failed", message);
   };
 
   return (
@@ -117,13 +246,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
           </View>
         </View>
         <Text style={styles.errorText}>{errorText}</Text>
-        <TouchableOpacity
-          onPress={() => {
-            UserService.resendVerification(email, () => {
-              alert("Verification sent");
-            });
-          }}
-        >
+        <TouchableOpacity onPress={handleRequestCode}>
           <Text style={styles.inputViewText1}>
             Didn't receive code? Request again
           </Text>
@@ -187,6 +310,7 @@ export default function VerifyEmailScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
       </View>
+      {loading && <Loading />}
     </View>
   );
 }

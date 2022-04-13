@@ -7,28 +7,57 @@ import {
   TextInput,
   Keyboard,
   TouchableWithoutFeedback,
+  Alert,
 } from "react-native";
 import { Icon } from "react-native-elements";
 import UserService from "../services/UserService";
 import { globalStyles } from "../styles/global";
+import Loading from "../components/Loading";
 
+/**
+ * Screen representing reset password interactions.
+ *
+ * @param {Object} navigation navigation object
+ * @returns ResetPasswordScreen
+ */
 const ResetPasswordScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [emailIsError, setEmailIsError] = useState(false);
   const validator = require("email-validator");
+  const [loading, setLoading] = useState(false);
 
+  /**
+   * Request verification token.
+   */
   const handleNavigateToVerify = () => {
-    if (validator.validate(email)) {
-      UserService.resendVerification(email, () => {
-        navigation.navigate("VerifyEmail", {
-          source: "ResetPassword",
-          email: email,
-        });
-      });
+    if (validator.validate(email.trim())) {
+      setLoading(true);
+      UserService.requestCode(email.trim(), requestCodeSuccessful, failure);
     } else {
       setEmailIsError(true);
     }
   };
+
+  /**
+   * Navigate to verify email screen if token
+   * is successfully received.
+   */
+  const requestCodeSuccessful = () => {
+    setLoading(false);
+    navigation.navigate("VerifyEmail", {
+      source: "Reset",
+      email: email,
+    });
+  };
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    setLoading(false);
+    Alert.alert("Reset Password Failed", message);
+  };
+
   return (
     <TouchableWithoutFeedback
       style={globalStyles.container}
@@ -73,6 +102,7 @@ const ResetPasswordScreen = ({ navigation }) => {
             <Text style={globalStyles.buttonText}>Send Verification</Text>
           </TouchableOpacity>
         </View>
+        {loading && <Loading />}
       </View>
     </TouchableWithoutFeedback>
   );
@@ -89,11 +119,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     alignSelf: "flex-start",
-  },
-
-  backButtonText: {
-    marginLeft: 5,
-    fontWeight: "500",
   },
 
   headerContainer: {

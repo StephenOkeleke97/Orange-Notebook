@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   Text,
   View,
@@ -17,23 +17,79 @@ import {
   getLastBackUpSize,
   setLastBackupDate,
   setLastBackupSize,
-} from "./settings.js";
+  getBackupEnabled,
+  toggleBackupEnabled,
+  parseDate,
+} from "../settings/settings.js";
 import { Icon } from "react-native-elements";
 import { globalStyles } from "../styles/global";
-import { getBackupEnabled, toggleBackupEnabled } from "./settings.js";
 import UserService from "../services/UserService.js";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
+/**
+ * Screen for handling Backup interactions.
+ *
+ * @param {Object} navigation navigation object
+ * @returns BackupSettingsScreen component
+ */
 const BackupSettingsScreen = ({ navigation }) => {
   const [rotateAnimation, setRotateAnimation] = useState(new Animated.Value(0));
+  /**
+   * Boolean to indicate when a backup action (backup, restore and delete)
+   * is in progress. Useful for animating the progress icon.
+   */
   const [backupInProgress, setBackupInProgress] = useState(false);
   const [backupFrequencyLabel, setBackupFrequencyLabel] = useState("Daily");
+  /**
+   * Variable to hold the date of last Backup
+   */
   const [lastDate, setLastDate] = useState("");
+  /**
+   * Variable to hold the size of last Backup
+   */
   const [lastSize, setLastSize] = useState(0);
+  /**
+   * Indicate the progress when uploading or downloading a backup.
+   */
   const [progressPercent, setProgressPercent] = useState(0 + " %");
+  /**
+   * Used by switch component to indicate whether
+   * or not auto backup is enabled.
+   */
   const [backupEnabled, setBackupEnabled] = useState(false);
 
-  const backupFrequencyActiveOpacity = backupEnabled ? 0.3 : 1;
+  const [userEmail, setUserEmail] = useState("");
 
+  /**
+   * Grey out button to BackupSettingsFrequency screen
+   * if auto backup is disabled.
+   */
+  const backupFrequencyActiveOpacity = backupEnabled ? 0.3 : 1;
+  let isMounted = useRef(true);
+
+  /**
+   * Keep track of component mount status to prevent
+   * updating an unmounted component.
+   */
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
+
+  /**
+   * Get user email from AsyncStorage when component
+   * is loaded.
+   */
+  useEffect(() => {
+    getUser().then((user) => {
+      setUserEmail(user);
+    });
+  }, [userEmail]);
+
+  /**
+   * Get last back up date and size on focus.
+   */
   useFocusEffect(
     React.useCallback(() => {
       getBackupEnabled(setBackupEnabledCallBack);
@@ -50,27 +106,82 @@ const BackupSettingsScreen = ({ navigation }) => {
     })
   );
 
+  /**
+   * Start or stop animation when backup status
+   * changes.
+   */
   useEffect(() => {
     if (backupInProgress) startImageRotateFunction();
     else rotateAnimation.stopAnimation();
   }, [backupInProgress]);
 
+  /**
+   * Get user email.
+   *
+   * @returns promise that returns user when fulfilled
+   */
+  const getUser = async () => {
+    let user;
+    try {
+      user = await AsyncStorage.getItem("email");
+    } catch (error) {
+      console.log(error);
+    }
+    return user;
+  };
+
+  /**
+   * Callback to trigger switch when backup is
+   * successfully enabled.
+   *
+   * @param {boolean} bool true if backup is enabled or false otherwise
+   */
   const setBackupEnabledCallBack = (bool) => {
     setBackupEnabled(bool);
   };
 
+  /**
+   * Toggle backup setting in database.
+   */
   const toggleBackUp = () => {
     toggleBackupEnabled(setBackupEnabledCallBack);
   };
 
-  const setProgressActiveCallBack = (boolean) => {
-    setBackupInProgress(boolean);
+  /**
+   * Update progress of backup download or upload
+   * to server.
+   *
+   * @param {int} percent percent completed
+   */
+  const updateProgress = (percent) => {
+    if (isMounted.current) setProgressPercent(percent);
   };
 
-  const setProgressCallBack = (percent) => {
-    setProgressPercent(percent);
+  /**
+   * Action refers to one of Back Up,
+   * Restore and Delete.
+   */
+  const actionSuccessful = (action) => {
+    setBackupInProgress(false);
+    Alert.alert("", `${action} Successful`);
   };
 
+  /**
+   * Action refers to one of Back Up,
+   * Restore and Delete.
+   */
+  const actionFailed = (
+    action,
+    message = "Something went wrong. Please try again later"
+  ) => {
+    setBackupInProgress(false);
+    Alert.alert(`${action} Failed`, message);
+  };
+
+  /**
+   * Backup database to server.
+   * Triggers a confirmation.
+   */
   const handleBackUpToServer = () => {
     Alert.alert(
       "Back Up Notes",
@@ -84,23 +195,31 @@ const BackupSettingsScreen = ({ navigation }) => {
         {
           text: "Back Up",
           onPress: () => {
-            UserService.backUp(setProgressActiveCallBack, setProgressCallBack);
+            setProgressPercent(0);
+            setBackupInProgress(true);
+            UserService.backUp(
+              userEmail,
+              actionSuccessful,
+              actionFailed,
+              updateProgress
+            );
           },
         },
       ]
     );
   };
 
-  const updateLastDateAndSize = (date, size) => {
-    setLastBackupDate(date);
-    setLastBackupSize(size);
-  };
-
+  /**
+   * Restore backup from server. Action runs
+   * in the background.
+   * Triggers confirmation.
+   */
   const handleRestoreFromServer = () => {
     Alert.alert(
       "Restore Backup",
       "Are you sure you want to restore backup? Completing this " +
-        "action will overwrite all notes on this device.",
+        "action will overwrite all notes on this device. This action will be " +
+        "completed in the background.",
       [
         {
           text: "Cancel",
@@ -109,12 +228,12 @@ const BackupSettingsScreen = ({ navigation }) => {
         {
           text: "Restore",
           onPress: () => {
+            setProgressPercent(0);
+            setBackupInProgress(true);
             UserService.restoreBackup(
-              setProgressActiveCallBack,
-              setProgressCallBack,
-              updateLastDateAndSize,
-              lastDate,
-              lastSize
+              actionSuccessful,
+              actionFailed,
+              updateProgress,
             );
           },
         },
@@ -122,6 +241,10 @@ const BackupSettingsScreen = ({ navigation }) => {
     );
   };
 
+  /**
+   * Delete backup from server.
+   * Triggers confirmation.
+   */
   const handleDeleteFromServer = () => {
     Alert.alert(
       "Delete Backup",
@@ -136,10 +259,10 @@ const BackupSettingsScreen = ({ navigation }) => {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            UserService.deleteBackup(
-              setProgressActiveCallBack,
-              setProgressCallBack
-            );
+            setProgressPercent("deleting...");
+            setBackupInProgress(true);
+
+            UserService.deleteBackup(actionSuccessful, actionFailed);
           },
         },
       ]
@@ -150,12 +273,18 @@ const BackupSettingsScreen = ({ navigation }) => {
     navigation.goBack();
   };
 
+  /**
+   * Navigate to BackupSettingsFrequency Screen.
+   */
   const handleSelectFrequency = () => {
     if (backupEnabled) {
       navigation.navigate("BackupFrequency");
     }
   };
 
+  /**
+   * Start animation of backup progress icon.
+   */
   const startImageRotateFunction = () => {
     rotateAnimation.setValue(0);
     Animated.timing(rotateAnimation, {

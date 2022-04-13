@@ -5,62 +5,112 @@ import {
   View,
   TextInput,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { useState } from "react";
 import { Icon } from "react-native-elements";
-import { useFonts } from "expo-font";
 import { globalStyles } from "../styles/global.js";
-import { HideKeyboard } from "./HideKeyboard.js";
+import { HideKeyboard } from "../components/HideKeyboard.js";
 import UserService from "../services/UserService.js";
-import CurrentUser from "../services/CurrentUser.js";
-import { initializeSettings, saveLogIn } from "./settings.js";
+import {
+  addTokenToAsyncStorage,
+  addUserEmailToAsyncStorage,
+  setUser,
+} from "../services/CurrentUser.js";
+import Loading from "../components/Loading.js";
 
+/**
+ * Screen to handle login interaction.
+ *
+ * @param {Object} navigation navigation object
+ * @returns
+ */
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const validator = require("email-validator");
   const [passwordVisible, setPasswordVisible] = useState(false);
+  /**
+   * Indicates when there is an error in the email
+   * format.
+   */
   const [emailIsError, setEmailIsError] = useState(false);
+  /**
+   * Indicates when the password is empty.
+   */
   const [passwordIsError, setPasswordIsError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  const [loaded] = useFonts({
-    LatoRegular: require("../assets/fonts/Lato-Regular.ttf"),
-    LatoBold: require("../assets/fonts/Lato-Bold.ttf"),
-  });
-
-  if (!loaded) {
-    return null;
-  }
-
-  const handleLogin = () => {
-    UserService.getTwoFactor(email, (enabled) => {
-      if (enabled) {
-        navigation.navigate("VerifyEmail", {
-          source: "Login",
-          email: email,
-        });
-      } else {
-        CurrentUser.prototype.setUser(email);
-        initializeSettings();
-        saveLogIn(email);
-        navigation.navigate("HomeLoggedIn");
-      }
-    });
-  };
-
-  const handleResetPassword = () => {
-    navigation.navigate("ResetPassword");
-  };
-
+  /**
+   * Check if Multi Factor Authentication is enabled.
+   */
   const onSubmit = () => {
-    const pEmail = email.trim();
-    if (!validator.validate(pEmail)) {
+    if (!validator.validate(email.trim())) {
       setEmailIsError(true);
     } else if (password === "") {
       setPasswordIsError(true);
     } else {
-      UserService.login(pEmail, password, handleLogin);
+      setLoading(true);
+      UserService.getTwoFactor(email.trim(), checkMfaSuccess, failure);
     }
+  };
+
+  /**
+   * MFA check callback. If MFA is enabled,
+   * navigate to the verify email screen. Otherwise,
+   * Login User.
+   *
+   * @param {boolean} enabled true if mfa enabled or false otherwise
+   */
+  const checkMfaSuccess = (enabled) => {
+    if (enabled) {
+      setLoading(false);
+      navigation.navigate("VerifyEmail", {
+        source: "Login",
+        email: email.trim(),
+        password: password,
+      });
+    } else {
+      UserService.login(email.trim(), password, null, loginSuccess, failure);
+    }
+  };
+
+  /**
+   * Handle successful login. Store usercredentials
+   * and authentication token.
+   *
+   * @param {Object} data object containing jwt token
+   */
+  const loginSuccess = async (data) => {
+    try {
+      await addUserEmailToAsyncStorage(email.trim());
+      await addTokenToAsyncStorage(data.token);
+    } catch (error) {
+      return failure();
+    }
+    setUser(email.trim(), data.twoFactor, onSetUser);
+  };
+
+  const failure = (
+    message = `Something went wrong. 
+  Please try again later`
+  ) => {
+    setLoading(false);
+    Alert.alert("Login Failed", message);
+  };
+
+  /**
+   * Callback called after the user credentials
+   * are stored successfully. Navigate to the
+   * HomeLoggedIn screen.
+   */
+  const onSetUser = () => {
+    setLoading(false);
+    navigation.navigate("HomeLoggedIn");
+  };
+
+  const handleResetPassword = () => {
+    navigation.navigate("ResetPassword");
   };
 
   return (
@@ -147,6 +197,7 @@ export default function LoginScreen({ navigation }) {
           <View style={styles.separator} />
         </View>
         <StatusBar style="auto" />
+        {loading && <Loading />}
       </View>
     </HideKeyboard>
   );
@@ -163,14 +214,6 @@ const styles = StyleSheet.create({
 
   closeIcon: {
     paddingLeft: 20,
-  },
-
-  registerLaterText: {
-    paddingRight: 20,
-    color: "#808285",
-    fontWeight: "500",
-    fontFamily: "LatoRegular",
-    fontSize: 16,
   },
 
   loginPageHeader: {
