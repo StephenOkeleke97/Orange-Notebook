@@ -4,6 +4,24 @@ import { useFonts } from "expo-font";
 import { useEffect, useState } from "react";
 import { TouchableWithoutFeedback } from "react-native";
 
+/**
+ * Render a category component
+ *
+ * @param {string} name Category name
+ * @param {int} noteCount number of notes in category
+ * @param {int} redColor red component of rgb color
+ * @param {int} greenColor green component of rgb color
+ * @param {int} blueColor blue component of rgb color
+ * @param {boolean} getSelectMode get select mode
+ * @param {function} setSelectMode set select mode
+ * @param {function} addToSelectedCategories add category to selected categories
+ * @param {function} removeFromSelectedCategories remove category from selected categories
+ * @param {boolean} getSelected boolean indicator of select status of current category
+ * @param {boolean} triggerSelectAll boolean to indicate a change when all
+ * categories are selected
+ * @param {Object} navigation navigation object
+ * @returns Category component
+ */
 export default function Category({
   name,
   noteCount,
@@ -18,8 +36,15 @@ export default function Category({
   triggerSelectAll,
   navigation,
 }) {
+  /**
+   * Indicates the select status of this category.
+   */
   const [selected, setSelected] = useState(false);
 
+  /**
+   * Takes two dependencies. select all status and
+   * select mode status from parent component.
+   */
   useEffect(() => {
     if (getSelectMode() === false) {
       setSelected(false);
@@ -28,7 +53,12 @@ export default function Category({
     }
   }, [triggerSelectAll, getSelectMode()]);
 
-  const noteClick = () => {
+  /**
+   * Handle click on category. If select mode
+   * is active, add or remove from category else
+   * view notes of this category.
+   */
+  const categoryClick = () => {
     if (getSelectMode()) {
       if (!selected) {
         addToSelectedCategories(name);
@@ -42,18 +72,10 @@ export default function Category({
       });
     }
   };
-  const [loaded] = useFonts({
-    Overpass: require("../assets/fonts/Overpass-Regular.ttf"),
-    OverpassBold: require("../assets/fonts/Overpass-SemiBold.ttf"),
-  });
-
-  if (!loaded) {
-    return null;
-  }
 
   return (
     <TouchableWithoutFeedback
-      onPress={() => noteClick()}
+      onPress={() => categoryClick()}
       onLongPress={() => setSelectMode()}
     >
       <View

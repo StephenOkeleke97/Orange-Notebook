@@ -6,13 +6,32 @@ import {
   TouchableOpacity,
   Modal,
   Dimensions,
+  Alert,
 } from "react-native";
 import { useState, useEffect } from "react";
 import React from "react";
 import { Icon } from "react-native-elements";
-import CurrentUser from "../services/CurrentUser";
-import { createCategory, updateNoteCategories, editCategory } from "./queries";
+import {
+  createCategory,
+  updateNoteCategories,
+  editCategory,
+} from "../db/queries";
 
+/**
+ * Create category. Renders a modal
+ * component at center of screen.
+ *
+ * @param {boolean} modalVisible true to show modal or false to hide
+ * @param {function} setModalVisible trigger show/ hide modal
+ * @param {array} filteredCategories array of filtered category names to validate
+ * new category name
+ * @param {array} notes array of notes to be added to this category
+ * @param {boolean} createMode true if create mode or false if edit mode
+ * @param {string} oldCategory old category name
+ * @param {function} clearSelection clear selection in parent component
+ * @param {Object} navigation navigation object
+ * @returns
+ */
 export default function CreateCategory({
   modalVisible,
   setModalVisible,
@@ -23,6 +42,9 @@ export default function CreateCategory({
   clearSelection,
   navigation,
 }) {
+  /**
+   * Object of available category colors.
+   */
   const colors = {
     blue: {
       redColor: 81,
@@ -59,6 +81,9 @@ export default function CreateCategory({
   const [redActive, setRedActive] = useState(false);
   const [purpleActive, setPurpleActive] = useState(false);
 
+  /**
+   * Reset variables when modal is triggered.
+   */
   useEffect(() => {
     if (createMode) {
       setCategoryName("");
@@ -67,6 +92,9 @@ export default function CreateCategory({
     }
   }, [modalVisible]);
 
+  /**
+   * Set active color
+   */
   const triggerActiveColor = () => {
     setBlueActive(false);
     setYellowActive(false);
@@ -81,61 +109,94 @@ export default function CreateCategory({
     }
   };
 
+  /**
+   * Save category to database.
+   *
+   * @returns alert if name is empty
+   */
   const saveCategory = () => {
     if (categoryName.trim() === "") {
-      return alert("Please choose a name for this category");
+      return Alert.alert("", "Please choose a name for this category");
     }
 
     if (createMode) {
-      if (
-        filteredCategories
-          .map((x) => x.CategoryName.toLowerCase())
-          .includes(categoryName.trim().toLowerCase())
-      ) {
-        return alert(
-          "This name is already taken. Please choose a different name"
-        );
-      } else {
-        createCategory(
-          categoryName.trim(),
-          CurrentUser.prototype.getUser(),
-          activeColor.redColor,
-          activeColor.greenColor,
-          activeColor.blueColor,
-          () => {
-            if (notes != null) {
-              updateNoteCategories(
-                notes,
-                categoryName,
-                CurrentUser.prototype.getUser(),
-                () => {
-                  navigation.navigate("HomeLoggedIn");
-                }
-              );
-            }
-          }
-        );
-      }
+      handleSaveCreateMode();
     } else {
-      if (
-        filteredCategories
-          .filter((category) => category.CategoryName !== oldCategory[0])
-          .map((x) => x.CategoryName.toLowerCase())
-          .includes(categoryName.trim().toLowerCase())
-      ) {
-        return alert(
-          "This name is already taken. Please choose a different name"
-        );
-      } else {
-        editCategory(
-          categoryName.trim(),
-          activeColor.redColor,
-          activeColor.greenColor,
-          activeColor.blueColor,
-          oldCategory[0],
-          CurrentUser.prototype.getUser()
-        );
-      }
+      handleSaveEditMode();
+    }
+  };
+
+  /**
+   * Save category to database if create mode is active.
+   *
+   * @returns return alert if name is unavailable
+   */
+  const handleSaveCreateMode = () => {
+    if (
+      filteredCategories
+        .map((x) => x.CategoryName.toLowerCase())
+        .includes(categoryName.trim().toLowerCase())
+    ) {
+      return Alert.alert(
+        "",
+        "This name is already taken. Please choose a different name"
+      );
+    } else {
+      createCategory(
+        categoryName.trim(),
+        activeColor.redColor,
+        activeColor.greenColor,
+        activeColor.blueColor,
+        updateNotesOfCategoryAfterSave
+      );
+    }
+
+    setModalVisible(false);
+    setCategoryName("");
+  };
+
+  /**
+   * Move selected notes to new category. If edit mode is
+   * active, the database does this automatically.
+   */
+  const updateNotesOfCategoryAfterSave = () => {
+    if (notes != null) {
+      updateNoteCategories(
+        notes,
+        categoryName,
+        () => {
+          navigation.navigate("HomeLoggedIn");
+        },
+        3
+      );
+    }
+  };
+
+  /**
+   * Save category to database if edit mode is active.
+   *
+   * @returns return alert if name is unavailable
+   */
+  const handleSaveEditMode = () => {
+    if (
+      filteredCategories
+        .filter((category) => category.CategoryName !== oldCategory[0])
+        .map((x) => x.CategoryName.toLowerCase())
+        .includes(categoryName.trim().toLowerCase())
+    ) {
+      return Alert.alert(
+        "",
+        "This name is already taken. Please choose a different name"
+      );
+    } else {
+      editCategory(
+        categoryName.trim(),
+        activeColor.redColor,
+        activeColor.greenColor,
+        activeColor.blueColor,
+        oldCategory[0]
+      );
+      handleClearSelection();
     }
 
     setModalVisible(false);
@@ -178,12 +239,7 @@ export default function CreateCategory({
               setActiveColor(colors.blue);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#64C7FF"
-            />
+            <Icon name="circle" type="material-community" color="#64C7FF" />
           </TouchableOpacity>
           <TouchableOpacity
             style={
@@ -195,12 +251,7 @@ export default function CreateCategory({
               setActiveColor(colors.yellow);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#FFEB7F"
-            />
+            <Icon name="circle" type="material-community" color="#FFEB7F" />
           </TouchableOpacity>
           <TouchableOpacity
             style={greenActive && { backgroundColor: "#FFF", borderRadius: 50 }}
@@ -210,12 +261,7 @@ export default function CreateCategory({
               setActiveColor(colors.green);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#5BFF62"
-            />
+            <Icon name="circle" type="material-community" color="#5BFF62" />
           </TouchableOpacity>
           <TouchableOpacity
             style={redActive && { backgroundColor: "#FFF", borderRadius: 50 }}
@@ -225,12 +271,7 @@ export default function CreateCategory({
               setActiveColor(colors.red);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#F375F3"
-            />
+            <Icon name="circle" type="material-community" color="#F375F3" />
           </TouchableOpacity>
           <TouchableOpacity
             style={
@@ -242,12 +283,7 @@ export default function CreateCategory({
               setActiveColor(colors.purple);
             }}
           >
-            <Icon
-              name="circle"
-              color="#FFF"
-              type="material-community"
-              color="#F6522E"
-            />
+            <Icon name="circle" type="material-community" color="#F6522E" />
           </TouchableOpacity>
         </View>
 
@@ -266,7 +302,6 @@ export default function CreateCategory({
             style={styles.buttons}
             onPress={() => {
               saveCategory();
-              handleClearSelection();
             }}
           >
             <Text style={styles.buttonText}>Save</Text>

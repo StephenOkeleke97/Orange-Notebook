@@ -1,451 +1,487 @@
 import axios from "axios";
 import * as FileSystem from "expo-file-system";
 import { FileSystemSessionType } from "expo-file-system";
-import CurrentUser from "./CurrentUser";
-import * as SQLite from "expo-sqlite";
-import { Alert } from "react-native";
-import { setLastBackupDate, setLastBackupSize } from "../components/settings";
+import { parseDate, setLastBackupDate, setLastBackupSize } from "../settings/settings";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { close } from "../db/SchemaScript";
 
-const auth = { username: "user", password: "password" };
-const host = "http://10.0.0.91:8080/api/";
-const verifyEmailAPI = host + "verifyEmail";
-const postNewUserAPI = host + "addUser";
-const verifyOTPAPI = host + "verifyOTP";
-const requestNewCodeAPI = host + "resendVerification";
-const loginAPI = host + "login";
-const backUpAPI = host + "backup";
-const restoreBackupAPI = host + "files/";
-const deleteBackupAPI = host + "deleteBackup/";
-const enableTwoFactorAPI = host + "enableTwoFactor";
-const getTwoFactorAPI = host + "getTwoFactor";
-const deleteUserAPI = host + "deleteAccount";
-const resetPasswordAPI = host + "resetPassword";
-const updateLastBackUpAPI = host + "updateLastBackUp";
-const getLastBackUpAPI = host + "lastBackUp";
+const host = "https://orangenotesbysteve.herokuapp.com/api/";
+const registerAPI = host + "register";
+const enableAPI = host + "enableaccount";
+const requestTokenAPI = host + "requesttoken";
+const loginAPI = "https://orangenotesbysteve.herokuapp.com/" + "login";
+const backupAPI = host + "backup";
+const restoreAPI = host + "restore";
+const deleteBackupAPI = host + "deletebackup";
+const enableMfaAPI = host + "enablemfa";
+const getTwoFactorAPI = host + "mfaenabled";
+const deleteUserAPI = host + "deleteaccount";
+const resetPasswordAPI = host + "resetpassword";
+const getLastBackUpInfoAPI = host + "getbackupinfo";
 
-const db = SQLite.openDatabase("notes.db");
+/**
+ * Store jwt in auth header and insert bearer prefix.
+ */
+export function setAuthHeader () {
+  getToken().then((token) => {
+    console.log(token);
+    if (token) {
+      axios.defaults.headers.common["Authorization"] = "Bearer " + token;
+    } else {
+      axios.defaults.headers.common["Authorization"] = null;
+    }
+  });
+}
 
+/**
+ * Get jwt token.
+ *
+ * @returns promise that returns token when fulfilled
+ */
+async function getToken() {
+  let token;
+  try {
+    token = await AsyncStorage.getItem("jwt");
+  } catch (error) {
+    console.log(error);
+  }
+  return token;
+}
+
+/**
+ * Class to handle API calls.
+ */
 class UserService {
-  timeout = 10000;
-  initialWait = 5000;
-  successWait = 2000;
+  /**
+   * Request timeout.
+   */
+  timeout = 60000;
 
+  /**
+   * Back up database to server.
+   *
+   * @param {string} email useremail. Used to construct file name
+   * @param {function} successful called after successful backup
+   * @param {function} failure called when backup fails
+   * @param {function} updateProgress update backup progress
+   * @param {boolean} isAutomatic true if backup is not initiated by user or
+   * false otherwise. If true, no feedback is given.
+   * @param {function} automaticCallBack callback called only when
+   * back up is auto.
+   */
   async backUp(
-    setProgressActiveCallBack,
-    setProgressCallBack,
-    isAutomatic,
+    email,
+    successful,
+    failure,
+    updateProgress,
+    isAutomatic = false,
     automaticCallBack
   ) {
     let size = 0;
-    setProgressActiveCallBack(true);
-    setTimeout(() => {
-      const data = new FormData();
-      const path = FileSystem.documentDirectory + "SQLite/notes.db";
-      data.append("file", {
-        uri: path,
-        type: "db",
-        name: `${CurrentUser.prototype.getUser()}backup`,
-      });
+    const data = new FormData();
+    const path = FileSystem.documentDirectory + "SQLite/notes.db";
+    data.append("file", {
+      uri: path,
+      type: "db",
+      name: `${email}backup`,
+    });
 
-      axios
-        .post(backUpAPI, data, {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          auth: auth,
-          timeout: this.timeout,
-          onUploadProgress: (progress) => {
-            size = progress.total;
-            let percentCompleted = Math.floor(
-              (progress.loaded / progress.total) * 100
-            );
-            setProgressCallBack(percentCompleted + "%");
-          },
-        })
-        .then((response) => {
-          if (response.status === 200) {
-            console.log(response.status);
-            const d = new Date();
-            const date = `${d.getFullYear()}-${
-              d.getMonth() + 1
-            }-${d.getDate()} ${d.getHours()}:${d.getMinutes()}:${d.getSeconds()}`;
-            setLastBackupDate(date);
-            setLastBackupSize(size / 100000);
-            setTimeout(() => {
-              setProgressActiveCallBack(false);
-              setProgressCallBack(0);
-              this._successAlert("Back Up", isAutomatic);
-            }, this.successWait);
-            if (isAutomatic) automaticCallBack();
-            this.updateLastBackUpInfo(5, date, size / 100000);
-          } else {
-            this._errorAlert("Back Up", isAutomatic);
-            setProgressActiveCallBack(false);
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-          this._errorAlert("Back Up", isAutomatic);
-          setProgressActiveCallBack(false);
-        });
-    }, this.initialWait);
-  }
-
-  restoreBackup(
-    setProgressActiveCallBack,
-    setProgressCallBack,
-    updateLastDateAndSize,
-    lastDate,
-    lastSize
-  ) {
-    setProgressActiveCallBack(true);
-    setTimeout(() => {
-      axios
-        .get(restoreBackupAPI + `${CurrentUser.prototype.getUser()}backup`, {
-          auth: auth,
-          timeout: this.timeout,
-        })
-        .then((response) => {
-          FileSystem.createDownloadResumable(
-            restoreBackupAPI + `${CurrentUser.prototype.getUser()}backup`,
-            FileSystem.documentDirectory + "SQLite/notes.db",
-            {
-              sessionType: FileSystemSessionType.BACKGROUND,
-            },
-            (progress) => {
-              let percentCompleted = Math.floor(
-                (progress.totalBytesExpectedToWrite /
-                  progress.totalBytesWritten) *
-                  100
-              );
-              setProgressCallBack(percentCompleted + "%");
-            },
-            null
-          )
-            .downloadAsync()
-            .then((response) => {
-              if (response.status === 200) {
-                db._db.close();
-                updateLastDateAndSize(lastDate, lastSize);
-                setTimeout(() => {
-                  setProgressActiveCallBack(false);
-                  setProgressCallBack(0);
-                  this._successAlert("Restore");
-                }, this.successWait);
-              } else {
-                this._errorAlert("Restore");
-                setProgressActiveCallBack(false);
-              }
-            });
-        })
-        .catch((error) => {
-          console.log(error.response);
-          if (error.response === undefined) this._errorAlert("Restore");
-          else if (error.response.status === 404) this._noBackupAlert();
-          else this._errorAlert("Restore");
-          setProgressActiveCallBack(false);
-        });
-    }, this.initialWait);
-  }
-
-  deleteBackup(setProgressActiveCallBack, setProgressCallBack) {
-    setProgressActiveCallBack(true);
-    setProgressCallBack("deleting...");
-    setTimeout(() => {
-      axios
-        .delete(deleteBackupAPI + `${CurrentUser.prototype.getUser()}backup`, {
-          auth: auth,
-          timeout: this.timeout,
-          params: {
-            "userEmail": CurrentUser.prototype.getUser()
-          }
-        })
-        .then((response) => {
-          if (response.status === 200) {
-            setTimeout(() => {
-              setLastBackupDate(null);
-              setLastBackupSize(null);
-              setProgressActiveCallBack(false);
-              setProgressCallBack(0);
-              this._successAlert("Delete");
-            }, this.successWait);
-          } else {
-            this._errorAlert("Delete");
-            setProgressActiveCallBack(false);
-            setProgressCallBack(0);
-          }
-        })
-        .catch((error) => {
-          if (error.response === undefined) this._errorAlert("Delete");
-          else if (error.response.status === 404) this._noBackupAlert();
-          else this._errorAlert("Delete");
-          setProgressActiveCallBack(false);
-          setProgressCallBack(0);
-        });
-    }, this.initialWait);
-  }
-
-  addUser(userEmail, password, callback) {
     axios
-      .get(verifyEmailAPI, {
-        params: {
-          userEmail: userEmail,
+      .post(backupAPI, data, {
+        headers: {
+          "Content-Type": "multipart/form-data",
         },
-        auth: auth,
+        timeout: this.timeout,
+        onUploadProgress: (progress) => {
+          size = progress.total;
+          let percentCompleted = Math.floor(
+            (progress.loaded / progress.total) * 100
+          );
+          updateProgress(percentCompleted + "%");
+        },
+      })
+      .then((response) => {
+        const date = parseDate(new Date());
+        setLastBackupDate(date);
+        setLastBackupSize(size / 100000);
+        if (isAutomatic) automaticCallBack();
+        successful("Backup");
+      })
+      .catch((error) => {
+        console.log(error);
+        failure("Backup");
+      });
+  }
+
+  /**
+   * Restore backup from server. File is downloaded to
+   * the a "backup" file in the SQLite directory.
+   *
+   * @param {function} successful called if restore is successful
+   * @param {function} failure called is restore fails
+   * @param {function} updateProgress updates restore progress
+   * @param {function} updateLastDateAndSize update last backup date and
+   * size if restore successful
+   */
+  restoreBackup(successful, failure, updateProgress) {
+    getToken().then((token) => {
+      FileSystem.createDownloadResumable(
+        restoreAPI,
+        FileSystem.documentDirectory + "SQLite/backup",
+        {
+          sessionType: FileSystemSessionType.BACKGROUND,
+          headers: {
+            Authorization: "Bearer " + token,
+          },
+        },
+        (progress) => {
+          let percentCompleted = Math.floor(
+            (progress.totalBytesWritten / progress.totalBytesExpectedToWrite) *
+              100
+          );
+          updateProgress(percentCompleted + "%");
+        },
+        null
+      )
+        .downloadAsync()
+        .then((response) => {
+          FileSystem.getInfoAsync(
+            FileSystem.documentDirectory + "SQLite/backup",
+            { md5: true }
+          ).then((res) => {
+            if (response.status === 200) {
+              this.handleFileCopy(
+                response.headers,
+                res.md5,
+                successful,
+                failure,
+                20
+              );
+            } else if (response.status === 404) {
+              failure(
+                "Restore",
+                "There is no Backup associated with this account"
+              );
+            } else {
+              failure("Restore");
+            }
+          });
+        })
+        .catch(() => {
+          failure("Restore");
+        });
+    });
+  }
+
+  /**
+   * Compare server and client checksum. If they are
+   * the same, Copy file from download location "...SQLite/backup" to
+   * the actual db path ("...SQLite/notes.db").
+   *
+   * @param {string} serverChecksum md5 hash from server
+   * @param {string} clientChecksum md5 hash of file in file system
+   * @param {function} successful called if copy is successful
+   * @param {function} failure called if copy fails
+   * @param {int} retries number of times to retry copy if it fails
+   */
+  handleFileCopy(
+    headers,
+    clientChecksum,
+    successful,
+    failure,
+    retries
+  ) {
+    const { Checksum, Info } = headers;
+    const info = JSON.parse(Info);
+    if (Checksum.toLowerCase() === clientChecksum.toLowerCase()) {
+      FileSystem.copyAsync({
+        from: FileSystem.documentDirectory + "SQLite/backup",
+        to: FileSystem.documentDirectory + "SQLite/notes.db",
+      })
+        .then(() => {
+          close();
+          const date = parseDate(info.date);
+          setLastBackupDate(date);
+          setLastBackupSize(info.size / 100000);
+          successful("Restore");
+        })
+        .catch((error) => {
+          if (retries > 0)
+            this.handleFileCopy(headers, clientChecksum, successful, failure, retries - 1);
+        });
+    } else {
+      failure(
+        "Restore",
+        "File may have been corrupted during restore. Please try again."
+      );
+    }
+  }
+
+  /**
+   * Delete backup from server.
+   *
+   * @param {function} success called if delete successful
+   * @param {function} failure called if delete fails
+   */
+  deleteBackup(success, failure) {
+    axios
+      .delete(deleteBackupAPI, {
         timeout: this.timeout,
       })
       .then((response) => {
-        console.log(response.data);
-        if (response.data === true) {
-          this._postUser(userEmail, password, callback);
-        } else {
-          this._userExistsWhenCreateError();
-        }
+        setLastBackupDate(null);
+        setLastBackupSize(null);
+        success("Delete");
       })
       .catch((error) => {
-        console.log(error);
-        this._errorAlert("Create Account");
+        if (error.response && error.response.status === 404) {
+          failure("Delete", "There is no backup associated with this account");
+        } else {
+          failure("Delete");
+        }
       });
   }
 
-  _postUser(email, password, callback) {
+  /**
+   * Register new user.
+   *
+   * @param {string} email user email
+   * @param {string} password user password
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
+  register(email, password, success, failure) {
     axios
-      .post(postNewUserAPI, null, {
-        auth: auth,
+      .post(registerAPI, null, {
         params: {
           email: email,
           password: password,
         },
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          callback();
-        } else {
-          this._errorAlert("Create Account");
-        }
+        success();
       })
       .catch((error) => {
-        console.log(error);
-        this._errorAlert("Create Account");
+        if (error.response) {
+          console.log(error.response.data);
+          failure(error.response.data.message);
+        } else {
+          failure();
+        }
       });
   }
 
-  async verifyUser(email, verificationCode, callback) {
-    await axios
-      .get(verifyOTPAPI, {
+  /**
+   * Enable newly created account.
+   *
+   * @param {string} email user email
+   * @param {string} code verification code
+   * @param {function} success callback on success
+   * @param {function} failure callback on success
+   */
+  enableAccount(email, code, success, failure) {
+    axios
+      .post(enableAPI, null, {
+        params: {
+          email: email,
+          code: code,
+        },
+        timeout: this.timeout,
+      })
+      .then((response) => {
+        success();
+      })
+      .catch((error) => {
+        if (error.response) {
+          console.log(error.response);
+          failure(error.response.data.message);
+        } else {
+          failure();
+        }
+      });
+  }
+
+  /**
+   * Request verification code.
+   *
+   * @param {string} email user email
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
+  requestCode(email, success, failure) {
+    axios
+      .post(requestTokenAPI, null, {
         params: {
           email,
-          verificationCode,
         },
-        auth: auth,
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.data === true) callback();
-        else this._invalidVerificationCodeAlert();
+        success();
       })
       .catch((error) => {
-        console.log(error);
-        this._errorAlert("Verification");
-      });
-  }
-
-  resendVerification(email, callback) {
-    axios
-      .get(requestNewCodeAPI, {
-        params: {
-          email,
-        },
-        auth: auth,
-      })
-      .then((response) => {
-        if (response.status === 200) {
-          callback();
+        if (error.response && error.response.status === 400) {
+          failure("There is no account associated with that email.");
         } else {
-          alert("Something went wrong. Please try again later");
+          failure();
         }
-      })
-      .catch((error) => {
-        console.log(error);
-        alert("Something went wrong. Please try again later");
       });
   }
 
-  login(email, password, callback) {
+  /**
+   * Login user.
+   *
+   * @param {string} email user email
+   * @param {string} password user password
+   * @param {int} code verification code
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
+  login(email, password, code, success, failure) {
     axios
-      .get(loginAPI, {
+      .post(loginAPI, null, {
         params: {
-          email,
-          password,
+          email: email,
+          password: password,
+          code: code,
         },
-        auth: auth,
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          if (response.data === true) callback();
-          else this._invalidUserNameOrPasswordAlert();
-        } else {
-          this._errorAlert("Login");
-        }
+        success(response.data);
       })
       .catch((error) => {
+        if (error.response) {
+          console.log("Error: " + error.response.data);
+          failure(error.response.data.message);
+        } else {
+          failure();
+        }
         console.log(error);
-        this._errorAlert("Login");
       });
   }
 
-  enableTwoFactor(email, boolean, sync) {
-    console.log("called");
+  /**
+   * Enable or disable two factor
+   * authentication.
+   *
+   * @param {email} email user email
+   * @param {boolean} enable true to enable or false to disable
+   * @param {function} failure
+   */
+  enableTwoFactor(email, enable, failure) {
     axios
-      .post(enableTwoFactorAPI, null, {
-        auth: auth,
+      .post(enableMfaAPI, null, {
         params: {
           userEmail: email,
-          enabled: boolean,
+          enabled: enable,
         },
-      })
-      .then((response) => {
-        if (response.status === 200) {
-          sync();
-        }
+        timeout: this.timeout,
       })
       .catch((error) => {
         console.log(error);
+        failure();
       });
   }
 
-  getTwoFactor(email, callback) {
+  /**
+   * Get two factor setting of user account.
+   *
+   * @param {string} email user email
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
+  getTwoFactor(email, success, failure) {
     axios
-      .get(getTwoFactorAPI, {
+      .post(getTwoFactorAPI, null, {
         params: {
-          userEmail: email,
+          email: email,
         },
-        auth: auth,
+        timeout: this.timeout,
       })
       .then((response) => {
-        console.log(response.data);
-        if (response.status === 200) {
-          callback(response.data);
-        } else {
-          this._errorAlert("Login");
-        }
+        success(response.data);
       })
       .catch((error) => {
+        if (error.response && error.response.status === 400) {
+          console.log(error.response);
+          failure("Invalid Username or Password");
+        } else {
+          failure();
+        }
         console.log(error);
-        this._errorAlert("Login");
       });
   }
 
-  delete(email, callback) {
+  /**
+   * Delete user account.
+   *
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
+  delete(success, failure) {
     axios
       .delete(deleteUserAPI, {
-        auth: auth,
-        params: {
-          userEmail: email,
-        },
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          callback();
-        } else {
-          this._errorAlert("Delete");
-        }
+        success();
       })
       .catch((error) => {
-        this._errorAlert("Delete");
+        failure();
       });
   }
 
-  resetPassword(email, password, callback) {
+  /**
+   * Reset user password.
+   *
+   * @param {string} email user email
+   * @param {string} password user new password
+   * @param {int} code verification code
+   * @param {function} success callback on success
+   * @param {function} failure callback on failure
+   */
+  resetPassword(email, password, code, success, failure) {
     axios
       .put(resetPasswordAPI, null, {
-        auth: auth,
         params: {
           email: email,
           password: password,
+          code: code,
         },
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          callback();
+        success();
+      })
+      .catch((error) => {
+        if (error.response) {
+          failure(error.response.data.message);
         } else {
-          this._errorAlert("Password Reset");
-        }
-      })
-      .catch((error) => {
-        console.log(error.response);
-        this._errorAlert("Password Reset");
-      });
-  }
-
-  updateLastBackUpInfo(retries, date, size) {
-    axios
-      .put(updateLastBackUpAPI, null, {
-        params: {
-          userEmail: CurrentUser.prototype.getUser(),
-          date: date,
-          size: size,
-        },
-        auth: auth,
-      })
-      .catch((error) => {
-        if (retries > 0) {
-          this.updateLastBackUpDate(retries - 1, date);
+          failure();
         }
       });
   }
 
-  getLastBackUpInfo(getLastBackUpCallback) {
+  /**
+   * Get last backup information from
+   * server.
+   *
+   * @param {function} updateLocal update local database
+   * with new info
+   */
+  getLastBackUpInfo(updateLocal) {
     axios
-      .get(getLastBackUpAPI, {
-        params: {
-          userEmail: CurrentUser.prototype.getUser(),
-        },
-        auth: auth,
+      .get(getLastBackUpInfoAPI, {
+        timeout: this.timeout,
       })
       .then((response) => {
-        if (response.status === 200) {
-          getLastBackUpCallback(response.data);
-        }
+        updateLocal(response.data);
       })
       .catch((error) => {
         console.log("Get last back up error:", error);
       });
-  }
-
-  //Error alerts
-
-  _errorAlert(action, isAutomatic) {
-    if (!isAutomatic)
-      Alert.alert(
-        `${action} Failed`,
-        "Something went wrong. Please try again later"
-      );
-  }
-
-  _successAlert(action, isAutomatic) {
-    if (!isAutomatic) Alert.alert("", `${action} Succesful`);
-  }
-
-  _noBackupAlert() {
-    Alert.alert("No Backup", "There is no backup associated with this account");
-  }
-
-  _userExistsWhenCreateError() {
-    Alert.alert(
-      "Create Account Failed",
-      "There is an account associated with this email"
-    );
-  }
-
-  _invalidVerificationCodeAlert() {
-    Alert.alert("Verification Failed", "The code you entered is incorrect");
-  }
-
-  _invalidUserNameOrPasswordAlert() {
-    Alert.alert(
-      "Login Failed",
-      "Your email or password is incorrect. Please try again"
-    );
   }
 }
 
