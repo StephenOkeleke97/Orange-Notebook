@@ -2,8 +2,8 @@
 <!-- PROJECT LOGO -->
 <br />
 <div align="center">
-  <a href="https://github.com/othneildrew/Best-README-Template">
-    <img src="images/logo.png" alt="Logo" width="80" height="80">
+  <a href="">
+    <img src="https://user-images.githubusercontent.com/98627291/163096349-5941d1e1-6d92-4afe-8f66-a15e2e0e86f3.png" alt="Logo" width="80" height="80">
   </a>
 
   <h3 align="center">Orange Notebook</h3>
